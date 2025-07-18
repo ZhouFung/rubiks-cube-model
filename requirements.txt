@@ -1,2 +1,2 @@
-# 必要依赖
-matplotlib
+numpy
+plotly

@@ -1,0 +1,341 @@
+[
+  {
+    "id": 0,
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "colors": {
+      "L": "BLUE",
+      "D": "YELLOW",
+      "B": "ORANGE"
+    }
+  },
+  {
+    "id": 1,
+    "position": [
+      0,
+      0,
+      1
+    ],
+    "colors": {
+      "L": "BLUE",
+      "D": "YELLOW"
+    }
+  },
+  {
+    "id": 2,
+    "position": [
+      0,
+      0,
+      2
+    ],
+    "colors": {
+      "L": "BLUE",
+      "D": "YELLOW",
+      "F": "RED"
+    }
+  },
+  {
+    "id": 3,
+    "position": [
+      0,
+      1,
+      0
+    ],
+    "colors": {
+      "L": "BLUE",
+      "B": "ORANGE"
+    }
+  },
+  {
+    "id": 4,
+    "position": [
+      0,
+      1,
+      1
+    ],
+    "colors": {
+      "L": "BLUE"
+    }
+  },
+  {
+    "id": 5,
+    "position": [
+      0,
+      1,
+      2
+    ],
+    "colors": {
+      "L": "BLUE",
+      "F": "RED"
+    }
+  },
+  {
+    "id": 6,
+    "position": [
+      2,
+      2,
+      2
+    ],
+    "colors": {
+      "L": "ORANGE",
+      "U": "WHITE",
+      "B": "ORANGE",
+      "F": "ORANGE",
+      "R": "BLUE"
+    }
+  },
+  {
+    "id": 7,
+    "position": [
+      2,
+      2,
+      1
+    ],
+    "colors": {
+      "L": "BLUE",
+      "U": "WHITE",
+      "F": "BLUE",
+      "R": "BLUE"
+    }
+  },
+  {
+    "id": 8,
+    "position": [
+      2,
+      2,
+      0
+    ],
+    "colors": {
+      "L": "BLUE",
+      "U": "WHITE",
+      "F": "BLUE",
+      "R": "BLUE",
+      "B": "RED"
+    }
+  },
+  {
+    "id": 9,
+    "position": [
+      1,
+      0,
+      0
+    ],
+    "colors": {
+      "D": "YELLOW",
+      "B": "ORANGE"
+    }
+  },
+  {
+    "id": 10,
+    "position": [
+      1,
+      0,
+      1
+    ],
+    "colors": {
+      "D": "YELLOW"
+    }
+  },
+  {
+    "id": 11,
+    "position": [
+      1,
+      0,
+      2
+    ],
+    "colors": {
+      "D": "YELLOW",
+      "F": "RED"
+    }
+  },
+  {
+    "id": 12,
+    "position": [
+      1,
+      1,
+      0
+    ],
+    "colors": {
+      "B": "ORANGE"
+    }
+  },
+  {
+    "id": 13,
+    "position": [
+      1,
+      1,
+      1
+    ],
+    "colors": {}
+  },
+  {
+    "id": 14,
+    "position": [
+      1,
+      1,
+      2
+    ],
+    "colors": {
+      "F": "RED"
+    }
+  },
+  {
+    "id": 15,
+    "position": [
+      1,
+      2,
+      2
+    ],
+    "colors": {
+      "U": "WHITE",
+      "B": "ORANGE",
+      "L": "ORANGE",
+      "F": "ORANGE"
+    }
+  },
+  {
+    "id": 16,
+    "position": [
+      1,
+      2,
+      1
+    ],
+    "colors": {
+      "U": "WHITE"
+    }
+  },
+  {
+    "id": 17,
+    "position": [
+      1,
+      2,
+      0
+    ],
+    "colors": {
+      "U": "WHITE",
+      "F": "RED",
+      "R": "RED",
+      "B": "RED"
+    }
+  },
+  {
+    "id": 18,
+    "position": [
+      2,
+      0,
+      0
+    ],
+    "colors": {
+      "R": "GREEN",
+      "D": "YELLOW",
+      "B": "ORANGE"
+    }
+  },
+  {
+    "id": 19,
+    "position": [
+      2,
+      0,
+      1
+    ],
+    "colors": {
+      "R": "GREEN",
+      "D": "YELLOW"
+    }
+  },
+  {
+    "id": 20,
+    "position": [
+      2,
+      0,
+      2
+    ],
+    "colors": {
+      "R": "GREEN",
+      "D": "YELLOW",
+      "F": "RED"
+    }
+  },
+  {
+    "id": 21,
+    "position": [
+      2,
+      1,
+      0
+    ],
+    "colors": {
+      "R": "GREEN",
+      "B": "ORANGE"
+    }
+  },
+  {
+    "id": 22,
+    "position": [
+      2,
+      1,
+      1
+    ],
+    "colors": {
+      "R": "GREEN"
+    }
+  },
+  {
+    "id": 23,
+    "position": [
+      2,
+      1,
+      2
+    ],
+    "colors": {
+      "R": "GREEN",
+      "F": "RED"
+    }
+  },
+  {
+    "id": 24,
+    "position": [
+      0,
+      2,
+      2
+    ],
+    "colors": {
+      "R": "GREEN",
+      "U": "WHITE",
+      "B": "GREEN",
+      "L": "GREEN",
+      "F": "ORANGE"
+    }
+  },
+  {
+    "id": 25,
+    "position": [
+      0,
+      2,
+      1
+    ],
+    "colors": {
+      "R": "GREEN",
+      "U": "WHITE",
+      "B": "GREEN",
+      "L": "GREEN"
+    }
+  },
+  {
+    "id": 26,
+    "position": [
+      0,
+      2,
+      0
+    ],
+    "colors": {
+      "R": "RED",
+      "U": "WHITE",
+      "F": "RED",
+      "B": "RED",
+      "L": "GREEN"
+    }
+  }
+]
