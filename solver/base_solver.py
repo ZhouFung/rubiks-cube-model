@@ -1,4 +1,4 @@
-from cube.cube import Cube
+from cube.core import Cube
 
 class BaseSolver:
     def __init__(self, cube: Cube):

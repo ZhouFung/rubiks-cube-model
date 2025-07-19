@@ -1,4 +1,4 @@
-from cube.cube import Cube
+from cube.core import Cube
 from view.plotly_cube import plot_cube
 
 if __name__ == '__main__':
