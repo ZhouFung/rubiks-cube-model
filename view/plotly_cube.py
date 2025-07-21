@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from cube.core import Cube
+from cube.piece_cube import PieceCube
 
  # 颜色名和缩写到Plotly十六进制颜色的映射
 COLOR_MAP = {
@@ -39,7 +39,7 @@ FACE_TO_TRIANGLES = {
     'L': [10, 11]
 }
 
-def plot_cube(cube: Cube, title: str = "Rubik's Cube", filename: str = 'cube.html'):
+def plot_cube(cube, title: str = "Rubik's Cube", filename: str = 'cube.html'):
     """生成魔方当前状态的交互式3D可视化。
 
     参数：
@@ -157,7 +157,7 @@ def plot_cube(cube: Cube, title: str = "Rubik's Cube", filename: str = 'cube.htm
 
 if __name__ == '__main__':
     # 示例用法：
-    my_cube = Cube()
+    my_cube = PieceCube()
     plot_cube(my_cube, title="Solved Cube", filename="cube_solved.html")
 
     my_cube.scramble(20)

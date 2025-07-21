@@ -1,7 +1,7 @@
-from cube.core import Cube
+from cube.piece_cube import  PieceCube
 
 class BaseSolver:
-    def __init__(self, cube: Cube):
+    def __init__(self, cube: PieceCube):
         self.cube = cube
 
     def solve(self):
