@@ -2,13 +2,14 @@ __all__ = ['Cube']
 import random
 import copy
 FACE_ORDER = ['U', 'R', 'F', 'D', 'L', 'B']
+# 统一Cube内部色序为kociemba标准: U:W, R:R, F:G, D:Y, L:O, B:B
 FACE_COLOR = {
-    'U': 'W',
-    'D': 'Y',
-    'F': 'R',
-    'B': 'O',
-    'L': 'B',
-    'R': 'G'
+    'U': 'W',  # White (Up)
+    'R': 'R',  # Red (Right)
+    'F': 'G',  # Green (Front)
+    'D': 'Y',  # Yellow (Down)
+    'L': 'O',  # Orange (Left)
+    'B': 'B'   # Blue (Back)
 }
 
 class Cube:
@@ -19,23 +20,29 @@ class Cube:
     def get_state(self):
         # 返回所有小块的位置和6面颜色（物理朝向下的真实颜色）
         state = []
-        for x in range(self.size):
-            for y in range(self.size):
-                for z in range(self.size):
+        n = self.size
+        for x in range(n):
+            for y in range(n):
+                for z in range(n):
                     face_color = {}
-                    for i, face in enumerate(FACE_ORDER):
-                        if face == 'U' and y == self.size-1:
-                            face_color['U'] = self.state['U'][x][z]
-                        if face == 'D' and y == 0:
-                            face_color['D'] = self.state['D'][self.size-1-x][z]
-                        if face == 'F' and z == self.size-1:
-                            face_color['F'] = self.state['F'][x][self.size-1-y]
-                        if face == 'B' and z == 0:
-                            face_color['B'] = self.state['B'][self.size-1-x][y]
-                        if face == 'L' and x == 0:
-                            face_color['L'] = self.state['L'][self.size-1-z][self.size-1-y]
-                        if face == 'R' and x == self.size-1:
-                            face_color['R'] = self.state['R'][z][self.size-1-y]
+                    # U: y==n-1, 顺序x,z
+                    if y == n-1:
+                        face_color['U'] = self.state['U'][x][z]
+                    # D: y==0, 顺序x,z
+                    if y == 0:
+                        face_color['D'] = self.state['D'][n-1-x][z]
+                    # F: z==n-1, 顺序x,n-1-y（正对自己，左上到右下）
+                    if z == n-1:
+                        face_color['F'] = self.state['F'][x][n-1-y]
+                    # B: z==0, 顺序n-1-x,n-1-y（正对自己，左上到右下）
+                    if z == 0:
+                        face_color['B'] = self.state['B'][n-1-x][n-1-y]
+                    # L: x==0, 顺序n-1-z,n-1-y
+                    if x == 0:
+                        face_color['L'] = self.state['L'][n-1-z][n-1-y]
+                    # R: x==n-1, 顺序z,n-1-y
+                    if x == n-1:
+                        face_color['R'] = self.state['R'][z][n-1-y]
                     state.append({'position': (x, y, z), 'colors': face_color})
         return state
 

@@ -1,3 +1,4 @@
+from tutorial.cfop_cross import CFOPCrossSolver
 
 import unittest
 from cube.core import Cube
@@ -5,6 +6,17 @@ from view.plotly_cube import plot_cube
 
 
 class TestCubeAPI(unittest.TestCase):
+    def test_cfop_cross_stage(self):
+        """测试CFOP十字阶段自动还原与可视化。"""
+        cube = Cube()
+        cube.scramble(15)
+        solver = CFOPCrossSolver(cube)
+        # 打乱后十字应未完成
+        self.assertFalse(solver.is_cross_solved())
+        moves = solver.solve_cross(verbose=True)
+        # 还原后十字应完成
+        self.assertTrue(solver.is_cross_solved())
+        plot_cube(cube, title="CFOP十字阶段", filename="test_cfop_cross.html")
     def test_composite_rotations(self):
         """测试复合旋转序列后魔方状态与预期一致。"""
         cube = Cube()
@@ -91,10 +103,10 @@ class TestCubeAPI(unittest.TestCase):
                     face_counts[face][v] = face_counts[face].get(v, 0) + 1
         self.assertEqual(face_counts['U'].get('W', 0), size*size)
         self.assertEqual(face_counts['D'].get('Y', 0), size*size)
-        self.assertEqual(face_counts['F'].get('R', 0), size*size)
-        self.assertEqual(face_counts['B'].get('O', 0), size*size)
-        self.assertEqual(face_counts['L'].get('B', 0), size*size)
-        self.assertEqual(face_counts['R'].get('G', 0), size*size)
+        self.assertEqual(face_counts['F'].get('G', 0), size*size)
+        self.assertEqual(face_counts['B'].get('B', 0), size*size)
+        self.assertEqual(face_counts['L'].get('O', 0), size*size)
+        self.assertEqual(face_counts['R'].get('R', 0), size*size)
         plot_cube(cube, title="Solved Cube", filename="test_cube_solved.html")
 
     def test_scramble_and_rotate(self):
