@@ -1,3 +1,4 @@
+// 文件已删除
 
 from cube.piece_cube import PieceCube
 

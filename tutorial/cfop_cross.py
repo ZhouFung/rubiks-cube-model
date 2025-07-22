@@ -346,7 +346,17 @@ class CFOPCrossSolver:
 
 if __name__ == '__main__':
     cube = PieceCube()
-    cube.scramble(15)
+    moves = cube.scramble(15)
+    print('[DEBUG] scramble moves:', moves)
+    print('[DEBUG] kociemba字符串:', cube.to_kociemba_string())
+    # 输出中心色
+    state = cube.get_state()
+    centers = {face: None for face in 'URFDLB'}
+    for cubie in state:
+        if len(cubie['colors']) == 1:
+            for face, color in cubie['colors'].items():
+                centers[face] = color
+    print('[DEBUG] centers:', centers)
     solver = CFOPCrossSolver(cube)
     print('初始是否十字:', solver.is_cross_solved())
     solver.solve_cross(verbose=True)

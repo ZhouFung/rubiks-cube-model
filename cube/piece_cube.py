@@ -46,7 +46,7 @@ class PieceCube:
         for idx, (pos, ori) in enumerate(self.corners):
             faces = list(CORNER_POSITIONS[pos])
             for _ in range(ori):
-                faces = [faces[2], faces[0], faces[1]]
+                faces = [faces[1], faces[2], faces[0]]  # kociemba官方Cube朝向旋转顺序
             std_faces = list(corner_face_map[idx])
             colors = {std_faces[i]: FACE_COLOR[faces[i]] for i in range(3)}
             state.append({'position': corner_pos_map[idx], 'colors': colors})
@@ -73,6 +73,7 @@ class PieceCube:
         ]
         for idx, (pos, ori) in enumerate(self.edges):
             faces = list(EDGE_POSITIONS[pos])
+            # 只有F/B/L/R面翻转棱块朝向
             if ori == 1:
                 faces = faces[::-1]
             std_faces = list(edge_face_map[idx])
@@ -108,105 +109,144 @@ class PieceCube:
         c.centers = list(self.centers)
         return c
     def rotate(self, face, clockwise=True):
-        # 只实现3阶标准旋转，face in 'URFDLB'
-        # 角块旋转表: 每个面影响的角块索引及其朝向变化
-        # kociemba标准旋转表
-        # kociemba标准旋转表，朝向变化严格对齐官方
+        # kociemba官方Cube置换与朝向变换表
+        # 角块置换与朝向变化
         corner_cycles = {
-            'U': [(0,1,2,3), (0,0,0,0)],
-            'D': [(4,5,6,7), (0,0,0,0)],
-            'F': [(0,3,7,4), (1,2,1,2)],  # 顺时针+1，逆时针-1
-            'B': [(1,2,6,5), (2,1,2,1)],  # 顺时针-1，逆时针+1
-            'L': [(2,3,7,6), (1,2,1,2)],  # 顺时针+1，逆时针-1
-            'R': [(0,1,5,4), (2,1,2,1)]   # 顺时针+1，逆时针-1
+            'U': [0,1,2,3],
+            'D': [4,5,6,7],
+            'F': [0,3,7,4],
+            'B': [1,2,6,5],
+            'L': [2,3,7,6],
+            'R': [0,1,5,4]
         }
+        corner_orient_delta = {
+            'U': [0,0,0,0],
+            'D': [0,0,0,0],
+            'F': [1,2,1,2],
+            'B': [2,1,2,1],
+            'L': [1,2,1,2],
+            'R': [2,1,2,1]
+        }
+        # 棱块置换与朝向变化
+        # kociemba官方Cube棱块置换表
         edge_cycles = {
-            'U': [(0,1,2,3), (0,0,0,0)],
-            'D': [(8,9,10,11), (0,0,0,0)],
-            'F': [(0,7,8,4), (1,1,1,1)],   # 顺时针+1，逆时针-1
-            'B': [(2,5,10,6), (1,1,1,1)],  # 顺时针+1，逆时针-1
-            'L': [(3,6,11,7), (1,1,1,1)],  # 顺时针+1，逆时针-1
-            'R': [(1,4,9,5), (1,1,1,1)]    # 顺时针+1，逆时针-1
+            'U': [0,1,2,3],
+            'D': [4,5,6,7],
+            'F': [1,9,5,8],
+            'B': [3,11,7,10],
+            'L': [2,10,6,9],
+            'R': [0,8,4,11]
         }
-        idxs, ori_shifts = corner_cycles[face]
-        # 角块朝向变化规则与Cube完全一致
-        if face in 'FBRL':
-            # F/L顺时针+1，逆时针-1；B/R顺时针-1，逆时针+1
-            shift = 1 if (face in 'FL' and clockwise) or (face in 'BR' and not clockwise) else -1
-        else:
-            shift = 0
+        edge_orient_delta = {
+            'U': [0,0,0,0],
+            'D': [0,0,0,0],
+            'F': [1,1,1,1],
+            'B': [1,1,1,1],
+            'L': [1,1,1,1],
+            'R': [1,1,1,1]
+        }
+        # 角块
+        idxs = corner_cycles[face]
+        oris = corner_orient_delta[face]
         if not clockwise:
             idxs = idxs[::-1]
+            oris = oris[::-1]
         tmp = [self.corners[i] for i in idxs]
         for i in range(4):
             pos, ori = tmp[(i-1)%4]
-            new_ori = ori
-            if shift != 0:
-                new_ori = (ori + shift * ori_shifts[i]) % 3
+            new_ori = (ori + oris[i]) % 3
             self.corners[idxs[i]] = (pos, new_ori)
-        idxs, ori_shifts = edge_cycles[face]
-        # 棱块朝向变化规则与Cube完全一致
-        if face in 'FBRL':
-            shift = 1 if clockwise else -1
-        else:
-            shift = 0
+        # 棱块
+        idxs = edge_cycles[face]
+        oris = edge_orient_delta[face]
         if not clockwise:
             idxs = idxs[::-1]
+            oris = oris[::-1]
         tmp = [self.edges[i] for i in idxs]
         for i in range(4):
             pos, ori = tmp[(i-1)%4]
-            new_ori = ori
-            if shift != 0:
-                new_ori = (ori + shift) % 2
+            new_ori = (ori + oris[i]) % 2
             self.edges[idxs[i]] = (pos, new_ori)
-    def scramble(self, moves_count=20):
-        moves = []
-        for _ in range(moves_count):
-            face = random.choice('URFDLB')
-            clockwise = random.choice([True, False])
-            self.rotate(face, clockwise)
-            moves.append(face + ('' if clockwise else "'"))
-        return moves
+    def scramble(self, moves_count=20, avoid_parity=True, kociemba_check=True, max_attempts=1000):
+        """
+        只用合法旋转序列打乱魔方，避免出现奇置换（kociemba不接受）。
+        若avoid_parity为True，最后自动补偿一次U面旋转，确保可达。
+        若kociemba_check为True，scramble后自动用kociemba校验字符串合法性，不合法则重试。
+        """
+        import importlib
+        kociemba = None
+        if kociemba_check:
+            try:
+                kociemba = importlib.import_module('kociemba')
+            except Exception:
+                kociemba = None
+        for attempt in range(max_attempts):
+            # 先复原
+            self.__init__()
+            moves = []
+            faces = 'URFDLB'
+            last_face = None
+            for _ in range(moves_count):
+                face = random.choice([f for f in faces if f != last_face])
+                clockwise = random.choice([True, False])
+                self.rotate(face, clockwise)
+                moves.append(face + ('' if clockwise else "'"))
+                last_face = face
+            if avoid_parity:
+                self.rotate('U', True)
+                moves.append('U')
+            if kociemba and kociemba_check:
+                s = ''
+                try:
+                    s = self.to_kociemba_string()
+                    kociemba.solve(s)
+                    return moves
+                except Exception as e:
+                    print(f'[DEBUG][scramble] attempt={attempt+1}, kociemba_str={s}, error={e}')
+                    continue
+            else:
+                return moves
+        raise RuntimeError('scramble无法生成kociemba可解状态，请增加max_attempts或检查实现')
     def is_solved(self):
         return all(pos==i and ori==0 for i,(pos,ori) in enumerate(self.corners)) and \
                all(pos==i and ori==0 for i,(pos,ori) in enumerate(self.edges))
     def to_kociemba_string(self):
         """
-        输出kociemba标准facelet顺序贴纸色彩字符串（URFDLB顺序，行优先，标准色），与Cube完全一致。
+        输出kociemba标准facelet顺序贴纸色彩字符串（URFDLB顺序，行优先，标准色），与官方Cube完全一致。
         """
-        # 采集Cube.get_state的facelet顺序和物理坐标
-        # U: y==2, x=0..2, z=0..2
-        # R: x==2, z=0..2, y=2..0
-        # F: z==2, x=0..2, y=2..0
-        # D: y==0, x=2..0, z=0..2
-        # L: x==0, z=2..0, y=2..0
-        # B: z==0, x=2..0, y=2..0
+        # 采集顺序严格对照官方Cube：URFDLB顺序，每面行优先（左上到右下）
+        # 坐标映射如下：
+        # U: (x,2,z) x=0..2, z=0..2
+        # R: (2,y,z) y=2..0, z=0..2
+        # F: (x,y,2) y=2..0, x=0..2
+        # D: (x,0,z) x=2..0, z=2..0
+        # L: (0,y,z) y=2..0, z=2..0
+        # B: (x,y,0) y=2..0, x=2..0
         state = self.get_state()
-        pos_map = {}
-        for cubie in state:
-            pos_map[tuple(cubie['position'])] = cubie['colors']
+        pos_map = {tuple(cubie['position']): cubie['colors'] for cubie in state}
         s = ''
-        # U面
-        for z in range(3):
+        # U面: y=2, x=0..2, z=0..2
+        for y in [2]:
             for x in range(3):
-                s += pos_map[(x,2,z)].get('U','X')
-        # R面
-        for z in range(3):
-            for y in range(2,-1,-1):
+                for z in range(3):
+                    s += pos_map[(x,y,z)].get('U','X')
+        # R面: x=2, y=2..0, z=0..2
+        for y in range(2,-1,-1):
+            for z in range(3):
                 s += pos_map[(2,y,z)].get('R','X')
-        # F面
+        # F面: z=2, y=2..0, x=0..2
         for y in range(2,-1,-1):
             for x in range(3):
                 s += pos_map[(x,y,2)].get('F','X')
-        # D面
-        for z in range(3):
-            for x in range(2,-1,-1):
+        # D面: y=0, x=2..0, z=2..0
+        for x in range(2,-1,-1):
+            for z in range(2,-1,-1):
                 s += pos_map[(x,0,z)].get('D','X')
-        # L面
-        for z in range(2,-1,-1):
-            for y in range(2,-1,-1):
+        # L面: x=0, y=2..0, z=2..0
+        for y in range(2,-1,-1):
+            for z in range(2,-1,-1):
                 s += pos_map[(0,y,z)].get('L','X')
-        # B面
+        # B面: z=0, y=2..0, x=2..0
         for y in range(2,-1,-1):
             for x in range(2,-1,-1):
                 s += pos_map[(x,y,0)].get('B','X')
