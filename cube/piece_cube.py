@@ -4,16 +4,16 @@
 from copy import deepcopy
 import random
 
-# 角块编号及其标准面序（UFR, URB, UBL, ULF, DFR, DRB, DBL, DLF）
+# 角块编号及其标准面序（UFR, URB, UBL, ULF, DFR, DRB, DBL, DLF），Cube官方顺序
 CORNER_POSITIONS = [
-    ('U','F','R'), ('U','R','B'), ('U','B','L'), ('U','L','F'),
+    ('U','R','F'), ('U','B','R'), ('U','L','B'), ('U','F','L'),
     ('D','F','R'), ('D','R','B'), ('D','B','L'), ('D','L','F')
 ]
-# 棱块编号及其标准面序（UF, UR, UB, UL, FR, BR, BL, FL, DF, DR, DB, DL）
+# 棱块编号及其标准面序（UR, UF, UL, UB, FR, BR, BL, FL, DR, DF, DL, DB），Cube官方顺序
 EDGE_POSITIONS = [
-    ('U','F'), ('U','R'), ('U','B'), ('U','L'),
+    ('U','R'), ('U','F'), ('U','L'), ('U','B'),
     ('F','R'), ('B','R'), ('B','L'), ('F','L'),
-    ('D','F'), ('D','R'), ('D','B'), ('D','L')
+    ('D','R'), ('D','F'), ('D','L'), ('D','B')
 ]
 # 中心块，严格URFDLB顺序，确保facelet字符串中心色顺序与kociemba官方一致
 CENTER_POSITIONS = ['U','R','F','D','L','B']  # 保持不变，facelet_indices需严格URFDLB顺序
@@ -78,10 +78,17 @@ class PieceCube:
         return state
     def __init__(self):
         self.size = 3  # 兼容CFOPCrossSolver等需要size属性的用法
-        # 角块: 8个, 每个(位置, 朝向), 位置0-7, 朝向0-2
-        self.corners = [(i,0) for i in range(8)]
-        # 棱块: 12个, 每个(位置, 朝向), 位置0-11, 朝向0-1
-        self.edges = [(i,0) for i in range(12)]
+        # 角块: 8个, 每个(位置, 朝向), 位置0-7, 朝向0-2，Cube官方初始分布
+        self.corners = [
+            (0,0), (1,0), (2,0), (3,0),
+            (4,0), (5,0), (6,0), (7,0)
+        ]
+        # 棱块: 12个, 每个(位置, 朝向), 位置0-11, 朝向0-1，Cube官方初始分布
+        self.edges = [
+            (0,0), (1,0), (2,0), (3,0),
+            (4,0), (5,0), (6,0), (7,0),
+            (8,0), (9,0), (10,0), (11,0)
+        ]
         # 中心块: 固定
         self.centers = list(CENTER_POSITIONS)
     def copy(self):
