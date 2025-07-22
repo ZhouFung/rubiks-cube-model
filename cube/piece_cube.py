@@ -51,15 +51,25 @@ class PieceCube:
             colors = {std_faces[i]: FACE_COLOR[faces[i]] for i in range(3)}
             state.append({'position': corner_pos_map[idx], 'colors': colors})
         # 3. 棱块（face分配与Cube完全一致，且输出标准色）
+        # kociemba标准棱块face分配与编号顺序完全一致
         edge_pos_map = [
-            (1,2,2), (2,2,1), (1,2,0), (0,2,1),
-            (2,1,2), (2,1,0), (0,1,0), (0,1,2),
-            (1,0,2), (2,0,1), (1,0,0), (0,0,1)
+            (2,2,1), # UR
+            (1,2,2), # UF
+            (0,2,1), # UL
+            (1,2,0), # UB
+            (2,1,2), # FR
+            (2,1,0), # BR
+            (0,1,0), # BL
+            (0,1,2), # FL
+            (2,0,1), # DR
+            (1,0,2), # DF
+            (0,0,1), # DL
+            (1,0,0)  # DB
         ]
         edge_face_map = [
-            ('U','F'), ('U','R'), ('U','B'), ('U','L'),
+            ('U','R'), ('U','F'), ('U','L'), ('U','B'),
             ('F','R'), ('B','R'), ('B','L'), ('F','L'),
-            ('D','F'), ('D','R'), ('D','B'), ('D','L')
+            ('D','R'), ('D','F'), ('D','L'), ('D','B')
         ]
         for idx, (pos, ori) in enumerate(self.edges):
             faces = list(EDGE_POSITIONS[pos])
