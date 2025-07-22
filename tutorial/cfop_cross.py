@@ -1,65 +1,48 @@
 """
 CFOP教程第一阶段：十字（Cross）
-本模块实现自动寻找和还原底色十字的过程，适用于3阶魔方。
-与Cube核心逻辑解耦，仅依赖Cube的API。
+本模块实现Cube的白色十字暴力解法与判定。
 """
-from cube.piece_cube import PieceCube
-import kociemba
+from cube.kociemba_cube import Cube
+from typing import List
 
-class CFOPCrossSolver:
-    def cross_solver_solve_cross(self, verbose=False):
-        """
-        用kociemba库实现十字还原。优先支持PieceCube，自动兼容Cube。
-        """
-        try:
-            # 优先支持PieceCube
-            from cube.piece_cube import PieceCube
-            if isinstance(self.cube, PieceCube):
-                kociemba_str = self.cube.to_kociemba_string()
-            else:
-                color_map = self._get_kociemba_color_map()
-                kociemba_str = self._to_kociemba_string(color_map)
-            from collections import Counter
-            color_counts = Counter(kociemba_str)
-            if verbose:
-                print('[DEBUG] kociemba输入:', kociemba_str)
-                print('[DEBUG] kociemba输入色统计:', dict(color_counts))
-            if len(color_counts) != 6 or any(v != 9 for v in color_counts.values()):
-                if verbose:
-                    print('[DEBUG] kociemba输入色数不合法，自动回退')
-                raise ValueError('kociemba输入色数不合法')
-            centers = [kociemba_str[i*9+4] for i in range(6)]
-            if len(set(centers)) != 6:
-                if verbose:
-                    print('[DEBUG] kociemba中心色不唯一，自动回退')
-                raise ValueError('kociemba中心色不唯一')
-            import kociemba
-            solution = kociemba.solve(kociemba_str)
-            if verbose:
-                print('[DEBUG] kociemba全解:', solution)
-            moves = []
-            for move in solution.split():
-                face, clockwise, *rest = self._parse_move(move)
-                if rest and isinstance(rest[0], int):
-                    for _ in range(rest[0]):
-                        self.cube.rotate(face, clockwise)
-                        moves.append(f"{face}{'2' if rest[0]==2 else ''}{"'" if not clockwise else ''}")
-                        if self.is_cross_solved():
-                            if verbose:
-                                print('[DEBUG] 十字已完成，提前终止')
-                            return moves
-                else:
-                    self.cube.rotate(face, clockwise)
-                    moves.append(move)
-                    if self.is_cross_solved():
-                        if verbose:
-                            print('[DEBUG] 十字已完成，提前终止')
-                        return moves
+# 白色十字棱块编号（DF, DR, DB, DL），Cube.edge_names索引
+CROSS_EDGES = [5, 4, 7, 6]  # DF, DR, DB, DL
+CROSS_MOVES = ["F", "R", "B", "L", "D", "U"]
+
+def is_cross_solved(cube: Cube) -> bool:
+    # 检查DF, DR, DB, DL四棱块是否在D面且朝向正确
+    for idx in CROSS_EDGES:
+        pos = cube.ep[idx]
+        ori = cube.eo[idx]
+        if pos not in CROSS_EDGES or ori != 0:
+            return False
+    return True
+
+def cfop_cross_solver(cube: Cube, max_depth=7) -> List[str]:
+    from collections import deque
+    MOVE_SET = [m for m in CROSS_MOVES] + [m+"'" for m in CROSS_MOVES] + [m+"2" for m in CROSS_MOVES]
+    visited = set()
+    queue = deque()
+    queue.append((cube, []))
+    visited.add((tuple(cube.ep), tuple(cube.eo)))
+    while queue:
+        cur_cube, moves = queue.popleft()
+        if is_cross_solved(cur_cube):
             return moves
-        except Exception as e:
-            if verbose:
-                print('[DEBUG] kociemba十字失败，回退原算法', e)
-            return self._fallback_cross_solver(verbose=verbose)
+        if len(moves) >= max_depth:
+            continue
+        for mv in MOVE_SET:
+            new_cube = Cube()
+            new_cube.cp = cur_cube.cp[:]
+            new_cube.co = cur_cube.co[:]
+            new_cube.ep = cur_cube.ep[:]
+            new_cube.eo = cur_cube.eo[:]
+            new_cube.move(mv)
+            state = (tuple(new_cube.ep), tuple(new_cube.eo))
+            if state not in visited:
+                visited.add(state)
+                queue.append((new_cube, moves + [mv]))
+    return []  # 未找到
 
     def _get_kociemba_color_map(self):
         """
@@ -314,50 +297,3 @@ class CFOPCrossSolver:
                 all_done = False
             if all_done:
                 break
-        return moves
-    def __init__(self, cube, cross_color='W'):
-        self.cube = cube
-        self.cross_color = cross_color  # 默认底色为白色
-        self.size = cube.size
-        assert self.size == 3, '仅支持3阶魔方CFOP十字教程'
-
-    def is_cross_solved(self):
-        """判断底面十字是否完成（底色中心+4条棱）"""
-        state = self.cube.get_state()
-        # 检查底面中心
-        for cubie in state:
-            x, y, z = cubie['position']
-            if y == 0:
-                # 中心块
-                if x == 1 and z == 1:
-                    if cubie['colors'].get('D', None) != self.cross_color:
-                        return False
-                # 棱块
-                elif (x, z) in [(1,0),(0,1),(2,1),(1,2)]:
-                    if cubie['colors'].get('D', None) != self.cross_color:
-                        return False
-        return True
-
-    def solve_cross(self, verbose=False):
-        """
-        优先调用cross solver算法，100%鲁棒还原十字。
-        """
-        return self.cross_solver_solve_cross(verbose=verbose)
-
-if __name__ == '__main__':
-    cube = PieceCube()
-    moves = cube.scramble(15)
-    print('[DEBUG] scramble moves:', moves)
-    print('[DEBUG] kociemba字符串:', cube.to_kociemba_string())
-    # 输出中心色
-    state = cube.get_state()
-    centers = {face: None for face in 'URFDLB'}
-    for cubie in state:
-        if len(cubie['colors']) == 1:
-            for face, color in cubie['colors'].items():
-                centers[face] = color
-    print('[DEBUG] centers:', centers)
-    solver = CFOPCrossSolver(cube)
-    print('初始是否十字:', solver.is_cross_solved())
-    solver.solve_cross(verbose=True)
-    print('最终是否十字:', solver.is_cross_solved())

@@ -36,7 +36,7 @@ class Cube:
         self.size = 3  # 兼容plotly_cube
 
     def to_kociemba_string(self):
-        color_map = {'U':'W','R':'R','F':'G','D':'Y','L':'O','B':'B'}
+        color_map = {'U':'Y','R':'R','F':'G','D':'W','L':'O','B':'B'}
         faces = {f: [['X']*3 for _ in range(3)] for f in 'URFDLB'}
         faces['U'][1][1] = 'W'
         faces['R'][1][1] = 'R'
