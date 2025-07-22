@@ -42,7 +42,7 @@ class Cube:
         color_map = {'U':'W','R':'R','F':'G','D':'Y','L':'O','B':'B'}
         # 贴纸顺序与 kociemba 官方一致
         # 先构造一个 6x3x3 的面贴色数组
-        faces = {f:[[None]*3 for _ in range(3)] for f in 'URFDLB'}
+        faces = {f: [['X']*3 for _ in range(3)] for f in 'URFDLB'}
         # 中心块
         faces['U'][1][1] = 'W'
         faces['R'][1][1] = 'R'
@@ -105,7 +105,7 @@ class Cube:
         for f in 'URFDLB':
             for x in range(3):
                 for y in range(3):
-                    s += faces[f][x][y] if faces[f][x][y] else 'X'
+                    s += faces[f][x][y]
         return s
     def move(self, move):
         face = move[0]
