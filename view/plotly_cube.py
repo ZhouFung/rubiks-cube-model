@@ -1,5 +1,5 @@
 import plotly.graph_objects as go
-from cube.piece_cube import PieceCube
+from cube.kociemba_cube import Cube
 
  # 颜色名和缩写到Plotly十六进制颜色的映射
 COLOR_MAP = {
@@ -157,8 +157,11 @@ def plot_cube(cube, title: str = "Rubik's Cube", filename: str = 'cube.html'):
 
 if __name__ == '__main__':
     # 示例用法：
-    my_cube = PieceCube()
+    my_cube = Cube()
     plot_cube(my_cube, title="Solved Cube", filename="cube_solved.html")
 
-    my_cube.scramble(20)
+    # 示例打乱：执行一串旋转
+    scramble_moves = ["R", "U", "R'", "F2", "D", "L", "B'"]
+    for mv in scramble_moves:
+        my_cube.move(mv)
     plot_cube(my_cube, title="Scrambled Cube", filename="cube_scrambled.html")

@@ -33,30 +33,17 @@ class Cube:
         self.co = [0]*8
         self.ep = list(range(12))
         self.eo = [0]*12
+        self.size = 3  # 兼容plotly_cube
 
     def to_kociemba_string(self):
-        # 生成 kociemba 标准 facelet 字符串（URFDLB顺序，行优先，标准色）
-        # 角块编号顺序: URF, UFL, ULB, UBR, DFR, DLF, DBL, DRB
-        # 棱块编号顺序: UR, UF, UL, UB, DR, DF, DL, DB, FR, FL, BL, BR
-        # 标准色序: U=W, R=R, F=G, D=Y, L=O, B=B
         color_map = {'U':'W','R':'R','F':'G','D':'Y','L':'O','B':'B'}
-        # 贴纸顺序与 kociemba 官方一致
-        # 先构造一个 6x3x3 的面贴色数组
         faces = {f: [['X']*3 for _ in range(3)] for f in 'URFDLB'}
-        # 中心块
         faces['U'][1][1] = 'W'
         faces['R'][1][1] = 'R'
         faces['F'][1][1] = 'G'
         faces['D'][1][1] = 'Y'
         faces['L'][1][1] = 'O'
         faces['B'][1][1] = 'B'
-        # 角块
-        corner_facelet = [
-            # U面四角
-            ('U',0,2), ('U',0,0), ('U',2,0), ('U',2,2),
-            # D面四角
-            ('D',2,2), ('D',2,0), ('D',0,0), ('D',0,2)
-        ]
         corner_adj = [
             [('U',0,2),('R',0,0),('F',0,2)],
             [('U',0,0),('F',0,0),('L',0,2)],
@@ -79,7 +66,6 @@ class Cube:
                 cols = [cols[1], cols[2], cols[0]]
             for (face, x, y), col in zip(corner_adj[i], cols):
                 faces[face][x][y] = color_map[col]
-        # 棱块
         edge_adj = [
             ('U',1,2),('U',0,1),('U',1,0),('U',2,1),
             ('D',1,2),('D',0,1),('D',1,0),('D',2,1),
@@ -100,17 +86,16 @@ class Cube:
             (f2,x2,y2) = edge_adj[(i+4)%12]
             faces[f1][x1][y1] = color_map[cols[0]]
             faces[f2][x2][y2] = color_map[cols[1]]
-        # 输出字符串，URFDLB顺序，行优先
         s = ''
         for f in 'URFDLB':
             for x in range(3):
                 for y in range(3):
                     s += faces[f][x][y]
         return s
+
     def move(self, move):
         face = move[0]
         clockwise = not (len(move)>1 and move[1] == "'")
-        # 角块
         idxs = self.corner_cycles[face]
         oris = self.corner_orient_delta[face]
         if not clockwise:
@@ -121,7 +106,6 @@ class Cube:
         for i in range(4):
             self.cp[idxs[i]] = tmp_cp[(i-1)%4]
             self.co[idxs[i]] = (tmp_co[(i-1)%4] + oris[i]) % 3
-        # 棱块
         idxs = self.edge_cycles[face]
         oris = self.edge_orient_delta[face]
         if not clockwise:
@@ -132,3 +116,58 @@ class Cube:
         for i in range(4):
             self.ep[idxs[i]] = tmp_ep[(i-1)%4]
             self.eo[idxs[i]] = (tmp_eo[(i-1)%4] + oris[i]) % 2
+
+    def get_state(self):
+        # 兼容plotly_cube的可视化接口，输出与PieceCube一致的结构
+        FACE_COLOR = {'U':'W','R':'R','F':'G','D':'Y','L':'O','B':'B'}
+        CENTER_POSITIONS = ['U','R','F','D','L','B']
+        state = []
+        center_pos_map = {
+            'U': (1,2,1), 'D': (1,0,1), 'F': (1,1,2), 'B': (1,1,0), 'L': (0,1,1), 'R': (2,1,1)
+        }
+        for i, f in enumerate(CENTER_POSITIONS):
+            pos = center_pos_map[f]
+            state.append({'position': pos, 'colors': {f: FACE_COLOR[f]}})
+        corner_pos_map = [
+            (2,2,2), (2,2,0), (0,2,0), (0,2,2),
+            (2,0,2), (2,0,0), (0,0,0), (0,0,2)
+        ]
+        corner_face_map = [
+            ('U','R','F'), ('U','B','R'), ('U','L','B'), ('U','F','L'),
+            ('D','F','R'), ('D','R','B'), ('D','B','L'), ('D','L','F')
+        ]
+        for idx in range(8):
+            c = self.cp[idx]
+            ori = self.co[idx]
+            faces = list(corner_face_map[c])
+            for _ in range(ori):
+                faces = [faces[1], faces[2], faces[0]]
+            std_faces = list(corner_face_map[idx])
+            colors = {std_faces[i]: FACE_COLOR[faces[i]] for i in range(3)}
+            state.append({'position': corner_pos_map[idx], 'colors': colors})
+        edge_pos_map = [
+            (2,2,1), (1,2,2), (0,2,1), (1,2,0),
+            (2,1,2), (2,1,0), (0,1,0), (0,1,2),
+            (2,0,1), (1,0,2), (0,0,1), (1,0,0)
+        ]
+        edge_face_map = [
+            ('U','R'), ('U','F'), ('U','L'), ('U','B'),
+            ('F','R'), ('B','R'), ('B','L'), ('F','L'),
+            ('D','R'), ('D','F'), ('D','L'), ('D','B')
+        ]
+        for idx in range(12):
+            e = self.ep[idx]
+            ori = self.eo[idx]
+            faces = list(edge_face_map[e])
+            if ori == 1:
+                faces = faces[::-1]
+            std_faces = list(edge_face_map[idx])
+            colors = {std_faces[i]: FACE_COLOR[faces[i]] for i in range(2)}
+            state.append({'position': edge_pos_map[idx], 'colors': colors})
+        filled = set(tuple(d['position']) for d in state)
+        for x in range(3):
+            for y in range(3):
+                for z in range(3):
+                    if (x,y,z) not in filled:
+                        state.append({'position': (x,y,z), 'colors': {}})
+        return state
