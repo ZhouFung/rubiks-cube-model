@@ -8,7 +8,6 @@ function App() {
   const cubeRef = useRef<CubeAdapter>(new CubeAdapter());
   // 魔方状态（六面颜色二维数组）
   const [faceColors, setFaceColors] = useState(cubeRef.current.getFaceColors());
-
   // 操作：打乱
   const handleRandomize = () => {
     cubeRef.current.randomize();
@@ -17,6 +16,27 @@ function App() {
   // 操作：还原
   const handleReset = () => {
     cubeRef.current.reset();
+    setFaceColors(cubeRef.current.getFaceColors());
+  };
+  // 操作：一键复原（先判断是否已复原，异常时弹窗提示）
+  const handleSolve = () => {
+    const solvedState = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
+    if (cubeRef.current.getState() === solvedState) {
+      alert('魔方已是复原状态！');
+      return;
+    }
+    try {
+      const solution = cubeRef.current.solve();
+      solution.forEach((move) => cubeRef.current.move(move));
+      setFaceColors(cubeRef.current.getFaceColors());
+      alert('魔方已复原！');
+    } catch (e) {
+      alert('复原失败，魔方状态异常或 cubejs 不支持此状态！');
+    }
+  };
+  // 操作：单层旋转
+  const handleLayerMove = (move: string) => {
+    cubeRef.current.move(move);
     setFaceColors(cubeRef.current.getFaceColors());
   };
   // 操作：执行公式（自动格式化公式字符串）
@@ -47,7 +67,18 @@ function App() {
         <button onClick={handleReset} style={{ marginRight: 8 }}>
           还原
         </button>
+        <button onClick={handleSolve} style={{ marginRight: 8 }}>
+          一键复原
+        </button>
         <button onClick={handleMove}>执行公式</button>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        {/* 单层旋转按钮 U D F B L R */}
+        {['U', "U'", 'D', "D'", 'F', "F'", 'B', "B'", 'L', "L'", 'R', "R'"].map((move) => (
+          <button key={move} onClick={() => handleLayerMove(move)} style={{ marginRight: 4 }}>
+            {move}
+          </button>
+        ))}
       </div>
       <Cube3D faceColors={faceColors} />
     </div>
