@@ -24,6 +24,8 @@ export class CubeAdapter {
     /** 执行魔方操作（如 "R U R' U'"） */
     move(sequence: string) {
         this.cube.move(sequence);
+        // 调试输出：当前魔方状态
+        console.log('cubejs.move() 后状态:', this.getState());
     }
 
     /** 打乱魔方 */
@@ -60,16 +62,23 @@ export class CubeAdapter {
     /** 获取六面颜色二维数组（每面9个块） */
     getFaceColors(): Record<FaceColor, string[]> {
         const state = this.getState();
-        // U D F B L R 顺序，每面9个块
-        const faces: FaceColor[] = ['U', 'R', 'F', 'D', 'L', 'B'];
-        const result: Record<FaceColor, string[]> = {
-            U: [], D: [], F: [], B: [], L: [], R: []
-        };
         // cubejs 默认顺序：U(0-8), R(9-17), F(18-26), D(27-35), L(36-44), B(45-53)
-        for (let i = 0; i < faces.length; i++) {
-            const face = faces[i];
-            result[face] = state.slice(i * 9, (i + 1) * 9).split('');
+        // faces 顺序与 cubejs 状态字符串一致
+        if (state.length !== 54) {
+            console.warn('魔方状态字符串长度异常:', state.length, state);
+            // 返回空面，避免后续报错
+            return {
+                U: [], D: [], F: [], B: [], L: [], R: []
+            };
         }
+        const result: Record<FaceColor, string[]> = {
+            U: state.slice(0, 9).split(''),
+            R: state.slice(9, 18).split(''),
+            F: state.slice(18, 27).split(''),
+            D: state.slice(27, 36).split(''),
+            L: state.slice(36, 45).split(''),
+            B: state.slice(45, 54).split('')
+        };
         return result;
     }
 }
