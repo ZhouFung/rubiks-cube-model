@@ -1,6 +1,11 @@
 import { useRef, useState } from 'react';
 import Cube3D from './components/Cube3D';
 import { CubeAdapter } from './cube/cube-adapter';
+// 自动初始化 cubejs 查表，确保求解器可用
+import * as CubeModule from 'cubejs';
+if (typeof (CubeModule as any).initSolver === 'function') {
+  (CubeModule as any).initSolver();
+}
 import './App.css';
 
 function App() {

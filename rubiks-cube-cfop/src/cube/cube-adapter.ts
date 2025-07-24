@@ -29,14 +29,25 @@ export class CubeAdapter {
     /** 打乱魔方 */
     randomize() {
         this.cube.randomize();
+        // 调试输出：打乱后的魔方状态
+        console.log('cubejs.randomize() 后状态:', this.getState());
     }
 
     /** 还原魔方 */
     solve(): string[] {
         try {
-            return this.cube.solve().split(' ');
+            const result = this.cube.solve();
+            if (!result) {
+                // 调试输出：还原失败，cubejs 返回 null
+                console.warn('cubejs.solve() 返回 null，无法还原当前状态:', this.getState());
+                return [];
+            }
+            // 调试输出：还原公式
+            console.log('cubejs.solve() 还原公式:', result);
+            return result.split(' ');
         } catch (e) {
-            // 还原失败时返回空数组
+            // 调试输出：异常信息
+            console.error('cubejs.solve() 异常:', e, '当前状态:', this.getState());
             return [];
         }
     }
