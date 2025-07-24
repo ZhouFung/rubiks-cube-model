@@ -1,6 +1,7 @@
 // cube-adapter.ts
 // 封装 cubejs 的 TypeScript 适配层
-import Cube from 'cubejs';
+import * as CubeModule from 'cubejs';
+const Cube = (CubeModule as any).default || CubeModule;
 
 export type FaceColor = 'U' | 'D' | 'F' | 'B' | 'L' | 'R';
 

@@ -1,7 +1,5 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { useMemo } from 'react';
-import { CubeAdapter } from '../cube/cube-adapter';
 import type { FaceColor } from '../cube/cube-adapter';
 
 // 魔方面字符到颜色映射
