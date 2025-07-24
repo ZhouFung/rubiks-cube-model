@@ -59,12 +59,7 @@ function faceIndex(face: FaceColor) {
 }
 
 // 3x3x3 魔方整体组件（根据 cubejs 状态动态贴色）
-export default function Cube3D() {
-  // 初始化 cubejs 适配器
-  const cube = useMemo(() => new CubeAdapter(), []);
-  // 获取六面颜色二维数组
-  const faceColors = cube.getFaceColors();
-
+export default function Cube3D({ faceColors }: { faceColors: Record<FaceColor, string[]> }) {
   // 生成 3x3x3 小方块坐标及每个 cubie 的六面贴色
   const cubies = [];
   for (let x = -1; x <= 1; x++) {
