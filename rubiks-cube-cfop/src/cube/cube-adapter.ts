@@ -12,7 +12,7 @@ export class CubeAdapter {
     private cube: any;
 
     constructor() {
-        this.cube = Cube();
+        this.cube = new Cube();
     }
 
     /** 获取当前魔方状态字符串 */
@@ -37,6 +37,22 @@ export class CubeAdapter {
 
     /** 重置魔方为初始状态 */
     reset() {
-        this.cube = Cube();
+        this.cube = new Cube();
+    }
+
+    /** 获取六面颜色二维数组（每面9个块） */
+    getFaceColors(): Record<FaceColor, string[]> {
+        const state = this.getState();
+        // U D F B L R 顺序，每面9个块
+        const faces: FaceColor[] = ['U', 'R', 'F', 'D', 'L', 'B'];
+        const result: Record<FaceColor, string[]> = {
+            U: [], D: [], F: [], B: [], L: [], R: []
+        };
+        // cubejs 默认顺序：U(0-8), R(9-17), F(18-26), D(27-35), L(36-44), B(45-53)
+        for (let i = 0; i < faces.length; i++) {
+            const face = faces[i];
+            result[face] = state.slice(i * 9, (i + 1) * 9).split('');
+        }
+        return result;
     }
 }
