@@ -33,7 +33,12 @@ export class CubeAdapter {
 
     /** 还原魔方 */
     solve(): string[] {
-        return this.cube.solve().split(' ');
+        try {
+            return this.cube.solve().split(' ');
+        } catch (e) {
+            // 还原失败时返回空数组
+            return [];
+        }
     }
 
     /** 重置魔方为初始状态 */

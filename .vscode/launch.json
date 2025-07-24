@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "调试前端(Vite)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/rubiks-cube-cfop/src"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "调试Jest测试",
+      "program": "${workspaceFolder}/rubiks-cube-cfop/node_modules/jest/bin/jest.js",
+      "args": ["--runInBand"],
+      "cwd": "${workspaceFolder}/rubiks-cube-cfop",
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "调试主程序(main.py)",
+      "program": "${workspaceFolder}/main.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    }
+  ]
+}
