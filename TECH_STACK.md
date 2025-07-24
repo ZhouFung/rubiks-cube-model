@@ -114,13 +114,14 @@
 
 ## 8. 详细开发 Checklist
 
-- [ ] 初始化 Vite + React + TypeScript 项目
-  - [ ] 使用 Vite 创建项目骨架（`npm create vite@latest` 或 `yarn create vite`）
-  - [ ] 选择 React + TypeScript 模板
-  - [ ] 配置 ESLint、Prettier、Git hooks 等开发工具
-  - [ ] 配置 alias 路径映射（vite.config.ts 中设置）
-- [ ] 安装依赖库（见第 3 节）
-- [ ] 目录结构搭建（见第 4 节，包括 tests/ 测试目录）
+
+- [x] 初始化 Vite + React + TypeScript 项目
+  - [x] 使用 Vite 创建项目骨架（`npm create vite@latest` 或 `yarn create vite`）
+  - [x] 选择 React + TypeScript 模板
+  - [x] 配置 ESLint、Prettier、Git hooks 等开发工具
+  - [x] 配置 alias 路径映射（vite.config.ts 中设置）
+- [x] 安装依赖库（见第 3 节）
+- [x] 目录结构搭建（见第 4 节，包括 tests/ 测试目录）
 
 - [ ] cubejs 封装与适配
   - [ ] 在 `src/cube/` 下创建 `cube-adapter.ts`
