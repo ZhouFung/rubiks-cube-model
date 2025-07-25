@@ -3,114 +3,151 @@ const Cube = (CubeModule as any).default || CubeModule;
 
 export type FaceColor = 'U' | 'D' | 'F' | 'B' | 'L' | 'R';
 
-// Type definition for the structure of a solved cube, if needed.
+// 魔方复原结构体类型定义（如有需要）
 export interface SolvedCube {
-  cross: string;
-  f2l: string[];
-  oll: string;
-  pll: string;
+    cross: string;
+    f2l: string[];
+    oll: string;
+    pll: string;
 }
 
 export class CubeAdapter {
     private cube: any;
 
     constructor() {
+        if (typeof Cube.initSolver === 'function') {
+            Cube.initSolver();
+        }
         this.cube = new Cube();
     }
 
-    /** Gets the current state of the cube as a 54-character string. */
+    /** 获取当前魔方状态，返回54字符字符串 */
     getState(): string {
-        return this.cube.asString();
+        const state = this.cube.asString();
+        if (state.length !== 54) {
+            console.error('魔方状态无效！长度:', state.length, '状态:', state);
+            // 自动重置魔方，防止后续错误
+            this.reset();
+            // 返回复原后的状态
+            return this.cube.asString();
+        }
+        return state;
     }
 
-    /** Executes a move or a sequence of moves. */
+    /** 执行一步或一组魔方操作 */
     move(sequence: string) {
         this.cube.move(sequence);
     }
 
     /**
-     * Randomizes the cube state.
-     * Note: We use the static `Cube.random()` method as it's the standard
-     * way in cubejs to generate a new, solvable, random cube instance.
-     * `this.cube.randomize()` is not the preferred API.
+     * 打乱魔方状态
+     * 推荐使用 Cube.random() 生成可解的随机魔方实例
+     * 不建议用 this.cube.randomize()
      */
     randomize() {
-        this.cube = Cube.random();
+        if (typeof this.cube.randomize === 'function') {
+            this.cube.randomize();
+        } else if (typeof Cube.random === 'function') {
+            this.cube = Cube.random();
+        } else {
+            // fallback: 重新 new 一个实例
+            this.cube = new Cube();
+        }
+        console.log('打乱后状态:', this.getState());
     }
 
-    /** Solves the entire cube and returns the full solution as an array of moves. */
+    /** 解整个魔方，返回所有步骤（字符串数组） */
     solve(): string[] | null {
         try {
+            if (!this.cube || typeof this.cube.solve !== 'function') {
+                console.error('cube.solve 方法不存在，cube:', this.cube);
+                return null;
+            }
             const result = this.cube.solve();
             if (typeof result === 'string' && result.length > 0) {
                 return result.split(' ');
             }
-            return []; // Already solved or no solution found
+            if (typeof result === 'string' && result.length === 0) {
+                console.warn('魔方已复原或无解步骤');
+            }
+            return []; // 已复原或无解
         } catch (e) {
-            console.error('Error solving cube:', e, 'Current state:', this.getState());
-            return null; // Indicates an error occurred
+            console.error('解魔方出错:', e, '当前状态:', this.getState());
+            return null; // 表示发生错误
         }
     }
-    
-    /** Solves just the cross and returns the moves. */
+
+    /** 只解底部十字，返回步骤 */
     solveCross(): string[] | null {
         try {
-            const solution = Cube.solve(this.getState(), 'cross');
+            const state = this.getState();
+            console.log('[调试] 当前魔方状态:', state);
+            const solution = Cube.solve(state, 'cross');
+            console.log('[调试] 解底部十字返回:', solution);
             return solution ? solution.split(' ') : [];
         } catch (e) {
-            console.error('Error solving cross:', e);
+            console.error('[调试] 解底部十字出错:', e, '当前状态:', this.getState());
             return null;
         }
     }
 
-    /** Solves the next F2L pair and returns the moves. */
+    /** 解F2L，返回步骤 */
     solveF2L(): string[] | null {
         try {
-            const solution = Cube.solve(this.getState(), 'f2l');
+            const state = this.getState();
+            console.log('[调试] 当前魔方状态:', state);
+            const solution = Cube.solve(state, 'f2l');
+            console.log('[调试] 解F2L返回:', solution);
             return solution ? solution.split(' ') : [];
         } catch (e) {
-            console.error('Error solving F2L:', e);
+            console.error('[调试] 解F2L出错:', e, '当前状态:', this.getState());
             return null;
         }
     }
 
-    /** Solves the OLL and returns the moves. */
+    /** 解顶层朝向（OLL），返回步骤 */
     solveOLL(): string[] | null {
         try {
-            const solution = Cube.solve(this.getState(), 'oll');
+            const state = this.getState();
+            console.log('[调试] 当前魔方状态:', state);
+            const solution = Cube.solve(state, 'oll');
+            console.log('[调试] 解OLL返回:', solution);
             return solution ? solution.split(' ') : [];
         } catch (e) {
-            console.error('Error solving OLL:', e);
+            console.error('[调试] 解OLL出错:', e, '当前状态:', this.getState());
             return null;
         }
     }
 
-    /** Solves the PLL and returns the moves. */
+    /** 解顶层排列（PLL），返回步骤 */
     solvePLL(): string[] | null {
         try {
-            const solution = Cube.solve(this.getState(), 'pll');
+            const state = this.getState();
+            console.log('[调试] 当前魔方状态:', state);
+            const solution = Cube.solve(state, 'pll');
+            console.log('[调试] 解PLL返回:', solution);
             return solution ? solution.split(' ') : [];
         } catch (e) {
-            console.error('Error solving PLL:', e);
+            console.error('[调试] 解PLL出错:', e, '当前状态:', this.getState());
             return null;
         }
     }
 
 
-    /** Resets the cube to its initial, solved state. */
+    /** 魔方复原，回到初始状态 */
     reset() {
         this.cube = new Cube();
     }
 
     /**
-     * Gets the colors of each face as a record of string arrays.
-     * The order of colors in each array corresponds to the cubejs string representation.
+     * 获取每个面的颜色，返回字符串数组对象
+     * 每个数组顺序与 cubejs 的字符串表示一致
      */
     getFaceColors(): Record<FaceColor, string[]> {
         const state = this.getState();
-        // cubejs face order: U, R, F, D, L, B
+        // cubejs 面顺序: U, R, F, D, L, B
         if (state.length !== 54) {
-            console.warn('Invalid cube state string length:', state.length, state);
+            console.warn('魔方状态字符串长度无效:', state.length, state);
             return { U: [], R: [], F: [], D: [], L: [], B: [] };
         }
         return {
@@ -132,17 +169,16 @@ export class CubeAdapter {
     }
 }
 
-// Helper to get cubelet index from (x, y, z) coordinates
-// Assuming cubelets are indexed from 0 to 26 based on their (x, y, z) positions
-// where x, y, z are -1, 0, 1.
-// Indexing: x + y*3 + z*9 (if x,y,z are mapped to 0,1,2)
+// 根据 (x, y, z) 坐标获取小块索引
+// 假设小块索引为 0~26，x,y,z 均为 -1,0,1
+// 索引计算: x + y*3 + z*9 (x,y,z 映射到 0,1,2)
 function getCubeletIndex(x: number, y: number, z: number): number {
     // Map -1, 0, 1 to 0, 1, 2 for array indexing
     const mapCoord = (coord: number) => coord + 1;
     return mapCoord(x) + mapCoord(y) * 3 + mapCoord(z) * 9;
 }
 
-// Helper to get cubelet indices for a given face/slice
+// 获取某一面/层所有小块索引
 function getCubeletIndicesForFace(axis: 'x' | 'y' | 'z', value: -1 | 0 | 1): number[] {
     const indices: number[] = [];
     for (let z = -1; z <= 1; z++) {
@@ -159,17 +195,17 @@ function getCubeletIndicesForFace(axis: 'x' | 'y' | 'z', value: -1 | 0 | 1): num
     return indices;
 }
 
-// Define the animation details for each move
+// 每一步操作的动画细节定义
 interface AnimationDetails {
     axis: 'x' | 'y' | 'z';
     angle: number; // in radians
     cubeletIndices: number[];
 }
 
-// Angle for a single turn (90 degrees)
+// 单次转动角度（90度）
 const QUARTER_TURN = Math.PI / 2;
 
-// Mapping of moves to animation details
+// 操作与动画细节的映射表
 const moveAnimationMap: { [key: string]: AnimationDetails } = {
     'R': { axis: 'x', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', 1) },
     "R'": { axis: 'x', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', 1) },
