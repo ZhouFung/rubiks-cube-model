@@ -1,12 +1,14 @@
-// cube-adapter.ts
-// 封装 cubejs 的 TypeScript 适配层
 import * as CubeModule from 'cubejs';
 const Cube = (CubeModule as any).default || CubeModule;
 
 export type FaceColor = 'U' | 'D' | 'F' | 'B' | 'L' | 'R';
 
-export interface CubeState {
-    stateString: string; // 54 字符魔方状态
+// Type definition for the structure of a solved cube, if needed.
+export interface SolvedCube {
+  cross: string;
+  f2l: string[];
+  oll: string;
+  pll: string;
 }
 
 export class CubeAdapter {
@@ -16,69 +18,109 @@ export class CubeAdapter {
         this.cube = new Cube();
     }
 
-    /** 获取当前魔方状态字符串 */
+    /** Gets the current state of the cube as a 54-character string. */
     getState(): string {
         return this.cube.asString();
     }
 
-    /** 执行魔方操作（如 "R U R' U'"） */
+    /** Executes a move or a sequence of moves. */
     move(sequence: string) {
         this.cube.move(sequence);
-        // 调试输出：当前魔方状态
-        console.log('cubejs.move() 后状态:', this.getState());
     }
 
-    /** 打乱魔方 */
+    /**
+     * Randomizes the cube state.
+     * Note: We use the static `Cube.random()` method as it's the standard
+     * way in cubejs to generate a new, solvable, random cube instance.
+     * `this.cube.randomize()` is not the preferred API.
+     */
     randomize() {
-        this.cube.randomize();
-        // 调试输出：打乱后的魔方状态
-        console.log('cubejs.randomize() 后状态:', this.getState());
+        this.cube = Cube.random();
     }
 
-    /** 还原魔方 */
-    solve(): string[] {
+    /** Solves the entire cube and returns the full solution as an array of moves. */
+    solve(): string[] | null {
         try {
             const result = this.cube.solve();
-            if (!result) {
-                // 调试输出：还原失败，cubejs 返回 null
-                console.warn('cubejs.solve() 返回 null，无法还原当前状态:', this.getState());
-                return [];
+            if (typeof result === 'string' && result.length > 0) {
+                return result.split(' ');
             }
-            // 调试输出：还原公式
-            console.log('cubejs.solve() 还原公式:', result);
-            return result.split(' ');
+            return []; // Already solved or no solution found
         } catch (e) {
-            // 调试输出：异常信息
-            console.error('cubejs.solve() 异常:', e, '当前状态:', this.getState());
-            return [];
+            console.error('Error solving cube:', e, 'Current state:', this.getState());
+            return null; // Indicates an error occurred
+        }
+    }
+    
+    /** Solves just the cross and returns the moves. */
+    solveCross(): string[] | null {
+        try {
+            const solution = Cube.solve(this.getState(), 'cross');
+            return solution ? solution.split(' ') : [];
+        } catch (e) {
+            console.error('Error solving cross:', e);
+            return null;
         }
     }
 
-    /** 重置魔方为初始状态 */
+    /** Solves the next F2L pair and returns the moves. */
+    solveF2L(): string[] | null {
+        try {
+            const solution = Cube.solve(this.getState(), 'f2l');
+            return solution ? solution.split(' ') : [];
+        } catch (e) {
+            console.error('Error solving F2L:', e);
+            return null;
+        }
+    }
+
+    /** Solves the OLL and returns the moves. */
+    solveOLL(): string[] | null {
+        try {
+            const solution = Cube.solve(this.getState(), 'oll');
+            return solution ? solution.split(' ') : [];
+        } catch (e) {
+            console.error('Error solving OLL:', e);
+            return null;
+        }
+    }
+
+    /** Solves the PLL and returns the moves. */
+    solvePLL(): string[] | null {
+        try {
+            const solution = Cube.solve(this.getState(), 'pll');
+            return solution ? solution.split(' ') : [];
+        } catch (e) {
+            console.error('Error solving PLL:', e);
+            return null;
+        }
+    }
+
+
+    /** Resets the cube to its initial, solved state. */
     reset() {
         this.cube = new Cube();
     }
 
-    /** 获取六面颜色二维数组（每面9个块） */
+    /**
+     * Gets the colors of each face as a record of string arrays.
+     * The order of colors in each array corresponds to the cubejs string representation.
+     */
     getFaceColors(): Record<FaceColor, string[]> {
         const state = this.getState();
-        // cubejs 默认顺序：U(0-8), R(9-17), F(18-26), D(27-35), L(36-44), B(45-53)
-        // faces 顺序与 cubejs 状态字符串一致
+        // cubejs face order: U, R, F, D, L, B
         if (state.length !== 54) {
-            console.warn('魔方状态字符串长度异常:', state.length, state);
-            // 返回空面，避免后续报错
-            return {
-                U: [], D: [], F: [], B: [], L: [], R: []
-            };
+            console.warn('Invalid cube state string length:', state.length, state);
+            return { U: [], R: [], F: [], D: [], L: [], B: [] };
         }
-        const result: Record<FaceColor, string[]> = {
+        return {
             U: state.slice(0, 9).split(''),
             R: state.slice(9, 18).split(''),
             F: state.slice(18, 27).split(''),
             D: state.slice(27, 36).split(''),
             L: state.slice(36, 45).split(''),
-            B: state.slice(45, 54).split('')
+            B: state.slice(45, 54).split(''),
         };
-        return result;
     }
 }
+''

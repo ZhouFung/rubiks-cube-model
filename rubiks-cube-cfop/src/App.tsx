@@ -1,93 +1,108 @@
-import { useRef, useState } from 'react';
-import Cube3D from './components/Cube3D';
+import React, { useState, useRef, useCallback } from 'react';
 import { CubeAdapter } from './cube/cube-adapter';
-// 自动初始化 cubejs 查表，确保求解器可用
-import * as CubeModule from 'cubejs';
-if (typeof (CubeModule as any).initSolver === 'function') {
-  (CubeModule as any).initSolver();
-}
+import Cube3D from './components/Cube3D';
 import './App.css';
 
 function App() {
-  // CubeAdapter 实例只初始化一次
-  const cubeRef = useRef<CubeAdapter>(new CubeAdapter());
-  // 魔方状态（六面颜色二维数组）
-  const [faceColors, setFaceColors] = useState(cubeRef.current.getFaceColors());
-  // 操作：打乱
-  const handleRandomize = () => {
-    cubeRef.current.randomize();
-    setFaceColors(cubeRef.current.getFaceColors());
-  };
-  // 操作：还原
-  const handleReset = () => {
-    cubeRef.current.reset();
-    setFaceColors(cubeRef.current.getFaceColors());
-  };
-  // 操作：一键复原（先判断是否已复原，异常时弹窗提示）
-  const handleSolve = () => {
-    const solvedState = 'UUUUUUUUURRRRRRRRRFFFFFFFFFDDDDDDDDDLLLLLLLLLBBBBBBBBB';
-    if (cubeRef.current.getState() === solvedState) {
-      alert('魔方已是复原状态！');
-      return;
-    }
-    try {
-      const solution = cubeRef.current.solve();
-      solution.forEach((move) => cubeRef.current.move(move));
-      setFaceColors(cubeRef.current.getFaceColors());
-      alert('魔方已复原！');
-    } catch (e) {
-      alert('复原失败，魔方状态异常或 cubejs 不支持此状态！');
-    }
-  };
-  // 操作：单层旋转
-  const handleLayerMove = (move: string) => {
-    cubeRef.current.move(move);
-    setFaceColors(cubeRef.current.getFaceColors());
-  };
-  // 操作：执行公式（自动格式化公式字符串）
-  const handleMove = () => {
-    const formula = prompt("请输入魔方公式（如 R U R' U'，可自动格式化）：");
-    if (formula) {
-      // 自动插入空格：将如 "RUR'U'" 转为 "R U R' U'"
-      const formatted = formula
-        .replace(/([RUFBLDrufbldxyzMES])('?2?)/g, ' $1')
-        .replace(/ +/g, ' ')
-        .trim();
-      try {
-        cubeRef.current.move(formatted);
-        setFaceColors(cubeRef.current.getFaceColors());
-      } catch (e) {
-        alert('公式无效，请检查输入！');
+  const cubeRef = useRef(new CubeAdapter());
+  const cube3DRef = useRef<{ triggerLayerRotate: (move: string, onEnd: () => void) => void }>(null);
+
+  const [faceColors, setFaceColors] = useState(() => cubeRef.current.getFaceColors());
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const handleMoves = useCallback((moves: string[] | null) => {
+    if (isAnimating || !moves || moves.length === 0) return;
+
+    let currentMoveIndex = 0;
+
+    const processNextMove = () => {
+      if (currentMoveIndex >= moves.length) {
+        setIsAnimating(false);
+        return;
       }
+
+      setIsAnimating(true);
+      const move = moves[currentMoveIndex];
+      cube3DRef.current?.triggerLayerRotate(move, () => {
+        cubeRef.current.move(move);
+        setFaceColors(cubeRef.current.getFaceColors());
+        currentMoveIndex++;
+        processNextMove();
+      });
+    };
+
+    processNextMove();
+  }, [isAnimating]);
+
+  const solveAndAnimate = (solver: () => string[] | null) => {
+    if (isAnimating) return;
+    const moves = solver();
+    if (moves && moves.length > 0) {
+      handleMoves(moves);
     }
   };
 
+  const randomize = () => {
+    if (isAnimating) return;
+    cubeRef.current.randomize();
+    setFaceColors(cubeRef.current.getFaceColors());
+  };
+
+  const reset = () => {
+    if (isAnimating) return;
+    cubeRef.current.reset();
+    setFaceColors(cubeRef.current.getFaceColors());
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 40 }}>
-      <h1>Rubik's Cube CFOP 教学演示</h1>
-      <div style={{ marginBottom: 16 }}>
-        <button onClick={handleRandomize} style={{ marginRight: 8 }}>
-          打乱
-        </button>
-        <button onClick={handleReset} style={{ marginRight: 8 }}>
-          还原
-        </button>
-        <button onClick={handleSolve} style={{ marginRight: 8 }}>
-          一键复原
-        </button>
-        <button onClick={handleMove}>执行公式</button>
+    <div className="app-container">
+      <div className="cube-container">
+        <Cube3D ref={cube3DRef} faceColors={faceColors} />
       </div>
-      <div style={{ marginBottom: 16 }}>
-        {/* 单层旋转按钮 U D F B L R */}
-        {['U', "U'", 'D', "D'", 'F', "F'", 'B', "B'", 'L', "L'", 'R', "R'"].map((move) => (
-          <button key={move} onClick={() => handleLayerMove(move)} style={{ marginRight: 4 }}>
-            {move}
-          </button>
-        ))}
+      <div className="controls-container">
+        <h1>Rubik's Cube CFOP Trainer</h1>
+        <div className="control-group">
+          <h2>General</h2>
+          <button onClick={randomize} disabled={isAnimating}>Scramble</button>
+          <button onClick={reset} disabled={isAnimating}>Reset</button>
+        </div>
+        <div className="control-group">
+          <h2>CFOP Stages</h2>
+          <button onClick={() => solveAndAnimate(() => cubeRef.current.solveCross())} disabled={isAnimating}>Solve Cross</button>
+          <button onClick={() => solveAndAnimate(() => cubeRef.current.solveF2L())} disabled={isAnimating}>Solve F2L</button>
+          <button onClick={() => solveAndAnimate(() => cubeRef.current.solveOLL())} disabled={isAnimating}>Solve OLL</button>
+          <button onClick={() => solveAndAnimate(() => cubeRef.current.solvePLL())} disabled={isAnimating}>Solve PLL</button>
+          <button onClick={() => solveAndAnimate(() => cubeRef.current.solve())} disabled={isAnimating}>Solve Full</button>
+        </div>
+        <div className="control-group">
+          <h2>Manual Moves</h2>
+          <div className="manual-moves">
+            {[..."UuDdLlRrFfBb"].map((char, index) => {
+              const move = index % 2 === 0 ? char.toUpperCase() : char.toUpperCase() + "'";
+              return (
+                <button key={move} onClick={() => handleMoves([move])} disabled={isAnimating}>
+                  {move}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="control-group">
+          <h2>Execute Algorithm</h2>
+          <div className="algorithm-input">
+            <input type="text" id="algorithm-input" placeholder="e.g., R U R' U'" />
+            <button onClick={() => {
+              const input = document.getElementById('algorithm-input') as HTMLInputElement;
+              if (input) {
+                handleMoves(input.value.split(' ').filter(Boolean));
+              }
+            }} disabled={isAnimating}>Execute</button>
+          </div>
+        </div>
       </div>
-      <Cube3D faceColors={faceColors} />
     </div>
   );
 }
 
 export default App;
+
