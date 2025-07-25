@@ -186,6 +186,10 @@ interface Cube3DProps {
 }
 
 const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [currentMove, setCurrentMove] = useState<string | null>(null);
+  const onAnimationEndCallbackRef = useRef<(() => void) | null>(null);
+
   const colorMaterials = useMemo(() => {
     const materials: Record<string, THREE.MeshBasicMaterial> = {};
     for (const key in COLOR_MAP) {
@@ -240,12 +244,56 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
     }));
   }, [faceColors]);
 
+  const [springs, api] = useSpring(() => ({
+    rotation: [0, 0, 0] as [number, number, number],
+    config: { tension: 270, friction: 30 },
+    onRest: () => {
+      setIsAnimating(false);
+      setCurrentMove(null);
+      if (onAnimationEndCallbackRef.current) onAnimationEndCallbackRef.current();
+    },
+  }));
+
+  const triggerLayerRotate = (move: string, onEnd?: () => void) => {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    setCurrentMove(move);
+    onAnimationEndCallbackRef.current = onEnd || null;
+
+    const { axis, value } = parseMove(move);
+    const rotation: [number, number, number] = [0, 0, 0];
+    if (axis === 'x') rotation[0] = value;
+    if (axis === 'y') rotation[1] = value;
+    if (axis === 'z') rotation[2] = value;
+
+    api.start({ from: { rotation: [0, 0, 0] }, to: { rotation }, reset: true });
+  };
+
+  useImperativeHandle(ref, () => ({ triggerLayerRotate }));
+
+  const { filter } = currentMove ? parseMove(currentMove) : { filter: () => false };
+  const animatedCubies = cubieList.filter((c) => filter(new THREE.Vector3(...c.position)));
+  const staticCubies = cubieList.filter((c) => !filter(new THREE.Vector3(...c.position)));
+
   return (
     <div style={{ width: '100%', height: '100%', touchAction: 'none' }}>
       <Canvas camera={{ position: [3.5, 3.5, 3.5], fov: 50 }}>
-        {cubieList.map((cubie) => (
+        {/* Removed ambientLight and pointLight as we are using MeshBasicMaterial */}
+
+        <animated.group
+          rotation-x={springs.rotation.to((r) => (Array.isArray(r) ? r[0] : 0))}
+          rotation-y={springs.rotation.to((r) => (Array.isArray(r) ? r[1] : 0))}
+          rotation-z={springs.rotation.to((r) => (Array.isArray(r) ? r[2] : 0))}
+        >
+          {animatedCubies.map((cubie) => (
+            <Cubie key={cubie.id} {...cubie} />
+          ))}
+        </animated.group>
+
+        {staticCubies.map((cubie) => (
           <Cubie key={cubie.id} {...cubie} />
-        ))}
+          ))}
+
         <OrbitControls enablePan={false} minDistance={3} maxDistance={10} />
       </Canvas>
     </div>
