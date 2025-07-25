@@ -140,11 +140,12 @@ const Cubie = React.memo(
 
 interface Cube3DProps {
   faceColors: Record<FaceColor, string[]>;
+  animationSpeed?: number; // 动画速度倍数，默认为1
 }
 
 const cubeAdapter = new CubeAdapter(); // 实例化CubeAdapter
 
-const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
+const Cube3D = forwardRef(function Cube3D({ faceColors, animationSpeed = 1 }: Cube3DProps, ref) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentMove, setCurrentMove] = useState<string | null>(null);
   const onAnimationEndCallbackRef = useRef<(() => void) | null>(null);
@@ -212,7 +213,7 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
       tension: 120, // 进一步降低张力，使动画更平滑
       friction: 14, // 调整摩擦力，平衡流畅度和精确性
       precision: 0.0001, // 提高精度，确保动画完成
-      duration: 300, // 恢复持续时间，确保动画完整执行
+      duration: 300 / animationSpeed, // 根据动画速度调整持续时间
     },
     onRest: () => {
       console.log('Animation completed, calling onRest');
@@ -260,6 +261,7 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
     if (animationDetails.axis === 'z') rotation[2] = animationDetails.angle;
 
     console.log(`Setting rotation for ${move} to:`, rotation);
+    console.log(`Using animation speed: ${animationSpeed}x`);
 
     // 确保动画从初始状态开始
     api.set({ rotation: [0, 0, 0] });
@@ -271,6 +273,12 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
         reset: true,
         from: { rotation: [0, 0, 0] },
         immediate: false,
+        config: {
+          tension: 120,
+          friction: 14,
+          precision: 0.0001,
+          duration: 300 / animationSpeed, // 根据动画速度动态调整持续时间
+        }
       });
     }, 10);
   };

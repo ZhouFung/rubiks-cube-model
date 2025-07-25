@@ -5,6 +5,10 @@
   --control-bg-color: #3a3f47;
   --button-bg-color: #4a4f57;
   --button-hover-bg-color: #5a5f67;
+  --success-color: #4caf50;
+  --current-color: #ff9800;
+  --progress-bg-color: #444;
+  --progress-fill-color: #61dafb;
 }
 
 body {
@@ -31,9 +35,44 @@ body {
 .cube-container {
   flex: 2;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100%;
+  position: relative;
+}
+
+/* 解魔方进度显示 */
+.solving-progress {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 15px;
+  border-radius: 10px;
+  z-index: 10;
+}
+
+.progress-bar {
+  height: 10px;
+  background-color: var(--progress-bg-color);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--progress-fill-color);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-color);
 }
 
 .controls-container {
@@ -112,4 +151,67 @@ button:disabled {
 
 .algorithm-input button {
   flex-shrink: 0;
+}
+
+/* 解法步骤显示 */
+.solution-steps {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.steps-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.step {
+  display: inline-block;
+  padding: 5px 10px;
+  background-color: var(--button-bg-color);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.step.current {
+  background-color: var(--current-color);
+  color: #000;
+  font-weight: bold;
+  transform: scale(1.1);
+}
+
+.step.completed {
+  background-color: var(--success-color);
+  color: #000;
+}
+
+/* 动画速度控制 */
+.speed-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.speed-controls button {
+  flex: 1;
+  max-width: 100px;
+}
+
+.speed-controls button.active {
+  background-color: var(--primary-color);
+  color: #000;
+  font-weight: bold;
+}
+
+/* 完整解魔方按钮 */
+.solve-full-btn {
+  background-color: var(--primary-color);
+  color: #000;
+  font-weight: bold;
+  padding: 12px 20px;
+  margin-top: 10px;
+  font-size: 1.1em;
 }
