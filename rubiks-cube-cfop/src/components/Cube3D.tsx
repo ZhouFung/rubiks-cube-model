@@ -40,8 +40,8 @@ const CUBIE_POSITIONS = [
   [-1, 0, 1],
   [1, 0, 1],
   [-1, 0, 0],
-  [0, 0, 1],
-  [0, 0, -1],
+  [0, 0, 1], // Added missing center cubie
+  [0, 0, -1], // Added missing center cubie
   [1, 0, 0],
   [-1, 0, -1],
   [1, 0, -1],
@@ -186,9 +186,13 @@ interface Cube3DProps {
 }
 
 const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [currentMove, setCurrentMove] = useState<string | null>(null);
-  const onAnimationEndCallbackRef = useRef<(() => void) | null>(null);
+  const colorMaterials = useMemo(() => {
+    const materials: Record<string, THREE.MeshBasicMaterial> = {};
+    for (const key in COLOR_MAP) {
+      materials[key] = new THREE.MeshBasicMaterial({ color: COLOR_MAP[key], side: THREE.DoubleSide });
+    }
+    return materials;
+  }, []);
 
   const cubieList = useMemo(() => {
     if (!faceColors.U || faceColors.U.length !== 9) return [];
@@ -200,7 +204,14 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
       faceColors.D.join('') +
       faceColors.L.join('') +
       faceColors.B.join('');
-    if (fullStateString.length !== 54) return [];
+
+    console.log('faceColors:', faceColors);
+    console.log('fullStateString:', fullStateString);
+
+    if (fullStateString.length !== 54) {
+      console.warn('Invalid fullStateString length:', fullStateString.length, fullStateString);
+      return [];
+    }
 
     const cubieMaterials = new Map<string, THREE.Material[]>();
     for (const pos of CUBIE_POSITIONS) {
@@ -208,18 +219,17 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
         JSON.stringify(pos),
         Array(6)
           .fill(null)
-          .map(() => new THREE.MeshStandardMaterial({ color: COLOR_MAP.default })),
+          .map(() => colorMaterials.default),
       );
     }
 
     for (let i = 0; i < 54; i++) {
       const sticker = STICKER_MAP[i];
-      const color = COLOR_MAP[fullStateString[i]];
       const posString = JSON.stringify(sticker.p);
       const materialIndex = FACE_TO_MATERIAL_INDEX[sticker.f as FaceColor];
       const materials = cubieMaterials.get(posString);
       if (materials) {
-        materials[materialIndex] = new THREE.MeshStandardMaterial({ color });
+        materials[materialIndex] = colorMaterials[fullStateString[i]] || colorMaterials.default;
       }
     }
 
@@ -230,57 +240,12 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
     }));
   }, [faceColors]);
 
-  const [springs, api] = useSpring(() => ({
-    rotation: [0, 0, 0] as [number, number, number],
-    config: { tension: 270, friction: 30 },
-    onRest: () => {
-      setIsAnimating(false);
-      setCurrentMove(null);
-      if (onAnimationEndCallbackRef.current) onAnimationEndCallbackRef.current();
-    },
-  }));
-
-  const triggerLayerRotate = (move: string, onEnd?: () => void) => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    setCurrentMove(move);
-    onAnimationEndCallbackRef.current = onEnd || null;
-
-    const { axis, value } = parseMove(move);
-    const rotation: [number, number, number] = [0, 0, 0];
-    if (axis === 'x') rotation[0] = value;
-    if (axis === 'y') rotation[1] = value;
-    if (axis === 'z') rotation[2] = value;
-
-    api.start({ from: { rotation: [0, 0, 0] }, to: { rotation }, reset: true });
-  };
-
-  useImperativeHandle(ref, () => ({ triggerLayerRotate }));
-
-  const { filter } = currentMove ? parseMove(currentMove) : { filter: () => false };
-  const animatedCubies = cubieList.filter((c) => filter(new THREE.Vector3(...c.position)));
-  const staticCubies = cubieList.filter((c) => !filter(new THREE.Vector3(...c.position)));
-
   return (
     <div style={{ width: '100%', height: '100%', touchAction: 'none' }}>
       <Canvas camera={{ position: [3.5, 3.5, 3.5], fov: 50 }}>
-        <ambientLight intensity={1.2} />
-        <pointLight position={[10, 10, 10]} intensity={0.8} />
-
-        <animated.group
-          rotation-x={springs.rotation.to((r) => (Array.isArray(r) ? r[0] : 0))}
-          rotation-y={springs.rotation.to((r) => (Array.isArray(r) ? r[1] : 0))}
-          rotation-z={springs.rotation.to((r) => (Array.isArray(r) ? r[2] : 0))}
-        >
-          {animatedCubies.map((cubie) => (
-            <Cubie key={cubie.id} {...cubie} />
-          ))}
-        </animated.group>
-
-        {staticCubies.map((cubie) => (
+        {cubieList.map((cubie) => (
           <Cubie key={cubie.id} {...cubie} />
         ))}
-
         <OrbitControls enablePan={false} minDistance={3} maxDistance={10} />
       </Canvas>
     </div>
