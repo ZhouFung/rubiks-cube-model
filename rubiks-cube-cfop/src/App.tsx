@@ -22,7 +22,23 @@ function App() {
   const [animationSpeed, setAnimationSpeed] = useState(1); // 动画速度倍数
   const [showSolutionSteps, setShowSolutionSteps] = useState(false); // 是否显示解法步骤
 
-  const handleMoves = useCallback((moves: string[] | null, isSolvingSequence = false) => {
+  useEffect(() => {
+    // 在组件首次加载时重置魔方和所有状态
+    // 以确保一个干净和一致的初始环境
+    console.log('App component mounted, resetting cube and component state.');
+    
+    // 重置解魔方相关状态
+    setIsSolving(false);
+    setCurrentStepIndex(-1);
+    setSolvingSteps([]);
+    setShowSolutionSteps(false);
+    
+    // 重置魔方实例并更新UI
+    cubeRef.current.reset();
+    setFaceColors(cubeRef.current.getFaceColors());
+  }, []); // 空依赖数组确保此effect仅在组件挂载时运行一次
+
+  const handleMoves = useCallback((moves: string[] | null, isSolvingSequence = false) => {""
     if (isAnimating || !moves || moves.length === 0) return;
 
     console.log(`Handling moves: ${moves.join(', ')}`);
