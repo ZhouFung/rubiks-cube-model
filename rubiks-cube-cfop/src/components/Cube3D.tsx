@@ -210,30 +210,27 @@ const Cube3D = forwardRef(function Cube3D({ faceColors, animationSpeed = 1 }: Cu
   const [springs, api] = useSpring(() => ({
     rotation: [0, 0, 0] as [number, number, number],
     config: {
-      tension: 120, // 进一步降低张力，使动画更平滑
-      friction: 14, // 调整摩擦力，平衡流畅度和精确性
-      precision: 0.0001, // 提高精度，确保动画完成
-      duration: 300 / animationSpeed, // 根据动画速度调整持续时间
+      tension: 120,
+      friction: 14,
+      precision: 0.0001,
     },
     onRest: () => {
       console.log('Animation completed, calling onRest');
-      // 确保在动画完全结束后才调用回调
-      setTimeout(() => {
-        setIsAnimating(false);
-        setCurrentMove(null);
-        if (onAnimationEndCallbackRef.current) {
-          const callback = onAnimationEndCallbackRef.current;
-          onAnimationEndCallbackRef.current = null;
-          callback();
-        }
-      }, 50); // 短暂延迟，确保视觉上的完成
+      setIsAnimating(false);
+      setCurrentMove(null);
+      api.set({ rotation: [0, 0, 0] });
+      if (onAnimationEndCallbackRef.current) {
+        const callback = onAnimationEndCallbackRef.current;
+        onAnimationEndCallbackRef.current = null;
+        callback();
+      }
     },
   }));
 
   const triggerLayerRotate = (move: string, onEnd?: () => void) => {
     if (isAnimating) {
       console.warn(`Animation already in progress, ignoring move: ${move}`);
-      if (onEnd) setTimeout(onEnd, 100); // 如果已经在动画中，延迟调用回调
+      if (onEnd) setTimeout(onEnd, 100);
       return;
     }
 
@@ -243,18 +240,16 @@ const Cube3D = forwardRef(function Cube3D({ faceColors, animationSpeed = 1 }: Cu
 
     console.log(`Triggering animation for move: ${move}`);
 
-    // 使用CubeAdapter中的getAnimationDetails替代parseMove
     const animationDetails = cubeAdapter.getAnimationDetails(move);
     if (!animationDetails) {
       console.warn(`No animation details found for move: ${move}`);
       setIsAnimating(false);
-      if (onEnd) onEnd(); // 即使没有动画也调用onEnd
+      if (onEnd) onEnd();
       return;
     }
 
     console.log(`Animation details for ${move}:`, animationDetails);
 
-    // 创建旋转向量
     const rotation: [number, number, number] = [0, 0, 0];
     if (animationDetails.axis === 'x') rotation[0] = animationDetails.angle;
     if (animationDetails.axis === 'y') rotation[1] = animationDetails.angle;
@@ -263,21 +258,13 @@ const Cube3D = forwardRef(function Cube3D({ faceColors, animationSpeed = 1 }: Cu
     console.log(`Setting rotation for ${move} to:`, rotation);
     console.log(`Using animation speed: ${animationSpeed}x`);
 
-    // 确保动画从初始状态开始
-    api.set({ rotation: [0, 0, 0] });
-
     // 使用setTimeout确保状态更新后再开始动画
     setTimeout(() => {
       api.start({
         to: { rotation },
-        reset: true,
         from: { rotation: [0, 0, 0] },
-        immediate: false,
         config: {
-          tension: 120,
-          friction: 14,
-          precision: 0.0001,
-          duration: 300 / animationSpeed, // 根据动画速度动态调整持续时间
+          duration: 300 / animationSpeed,
         }
       });
     }, 10);
