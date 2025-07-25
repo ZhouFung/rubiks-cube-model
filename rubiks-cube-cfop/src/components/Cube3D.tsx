@@ -114,11 +114,14 @@ const Cubie = React.memo(
   }: {
     position: [number, number, number];
     materials: THREE.Material[];
-  }) => (
-    <mesh position={position} material={materials}>
-      <boxGeometry args={[0.95, 0.95, 0.95]} />
-    </mesh>
-  ),
+  }) => {
+    console.log(`Rendering cubie at position: ${position}`);
+    return (
+      <mesh position={position} material={materials}>
+        <boxGeometry args={[0.95, 0.95, 0.95]} />
+      </mesh>
+    );
+  },
 );
 
 interface Cube3DProps {
@@ -202,6 +205,8 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
     setCurrentMove(move);
     onAnimationEndCallbackRef.current = onEnd || null;
 
+    console.log(`Triggering animation for move: ${move}`);
+    
     // 使用CubeAdapter中的getAnimationDetails替代parseMove
     const animationDetails = cubeAdapter.getAnimationDetails(move);
     if (!animationDetails) {
@@ -209,6 +214,8 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
       if (onEnd) onEnd(); // 即使没有动画也调用onEnd
       return;
     }
+    
+    console.log(`Animation details:`, animationDetails);
 
     const rotation: [number, number, number] = [0, 0, 0];
     if (animationDetails.axis === 'x') rotation[0] = animationDetails.angle;
@@ -235,6 +242,7 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
     const animatedCubies = cubieList.filter(c => filter(new THREE.Vector3(...c.position)));
     const staticCubies = cubieList.filter(c => !filter(new THREE.Vector3(...c.position)));
     
+    console.log(`Move: ${move}, Animated cubies: ${animatedCubies.length}, Static cubies: ${staticCubies.length}`);
     return { filter, animatedCubies, staticCubies };
   };
   
@@ -251,13 +259,13 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
           rotation-z={springs.rotation.to((r) => (Array.isArray(r) ? r[2] : 0))}
         >
           {animatedCubies.map((cubie) => (
-            <Cubie key={cubie.id} {...cubie} />
+            <Cubie key={cubie.id} position={cubie.position} materials={cubie.materials} />
           ))}
         </animated.group>
 
         {staticCubies.map((cubie) => (
-          <Cubie key={cubie.id} {...cubie} />
-          ))}
+          <Cubie key={cubie.id} position={cubie.position} materials={cubie.materials} />
+        ))}
 
         <OrbitControls enablePan={false} minDistance={3} maxDistance={10} />
       </Canvas>

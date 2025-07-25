@@ -4,26 +4,42 @@ import Cube3D from './components/Cube3D';
 import './App.css';
 
 function App() {
+  console.log('App component rendering');
   const cubeRef = useRef(new CubeAdapter());
   const cube3DRef = useRef<{ triggerLayerRotate: (move: string, onEnd: () => void) => void }>(null);
 
-  const [faceColors, setFaceColors] = useState(() => cubeRef.current.getFaceColors());
+  const [faceColors, setFaceColors] = useState(() => {
+    const colors = cubeRef.current.getFaceColors();
+    console.log('Initial face colors:', colors);
+    return colors;
+  });
   const [isAnimating, setIsAnimating] = useState(false);
 
   const handleMoves = useCallback((moves: string[] | null) => {
     if (isAnimating || !moves || moves.length === 0) return;
 
+    console.log(`Handling moves: ${moves.join(', ')}`);
     let currentMoveIndex = 0;
 
     const processNextMove = () => {
       if (currentMoveIndex >= moves.length) {
         setIsAnimating(false);
+        console.log('All moves completed');
         return;
       }
 
       setIsAnimating(true);
       const move = moves[currentMoveIndex];
-      cube3DRef.current?.triggerLayerRotate(move, () => {
+      console.log(`Processing move ${currentMoveIndex + 1}/${moves.length}: ${move}`);
+      
+      if (!cube3DRef.current) {
+        console.error('cube3DRef is not initialized');
+        setIsAnimating(false);
+        return;
+      }
+      
+      cube3DRef.current.triggerLayerRotate(move, () => {
+        console.log(`Animation completed for move: ${move}`);
         cubeRef.current.move(move);
         setFaceColors(cubeRef.current.getFaceColors());
         currentMoveIndex++;
