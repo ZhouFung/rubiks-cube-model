@@ -104,7 +104,7 @@ const STICKER_MAP = [
   { p: [-1, 0, -1], f: 'B' },
   { p: [1, -1, -1], f: 'B' },
   { p: [0, -1, -1], f: 'B' },
-  { p: [1, -1, -1], f: 'B' },
+  { p: [-1, -1, -1], f: 'B' },
 ];
 
 const Cubie = React.memo(
@@ -115,9 +115,20 @@ const Cubie = React.memo(
     position: [number, number, number];
     materials: THREE.Material[];
   }) => {
-    console.log(`Rendering cubie at position: ${position}`);
+    // 使用useRef来跟踪mesh引用
+    const meshRef = useRef<THREE.Mesh>(null);
+    
+    // 在组件挂载和更新时记录位置
+    useEffect(() => {
+      console.log(`Cubie at position: ${position} rendered/updated`);
+    }, [position]);
+    
     return (
-      <mesh position={position} material={materials}>
+      <mesh 
+        ref={meshRef}
+        position={position} 
+        material={materials}
+      >
         <boxGeometry args={[0.95, 0.95, 0.95]} />
       </mesh>
     );
@@ -191,16 +202,34 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
 
   const [springs, api] = useSpring(() => ({
     rotation: [0, 0, 0] as [number, number, number],
-    config: { tension: 270, friction: 30 },
+    config: { 
+      tension: 120,  // 进一步降低张力，使动画更平滑
+      friction: 14,  // 调整摩擦力，平衡流畅度和精确性
+      precision: 0.0001,  // 提高精度，确保动画完成
+      duration: 300,  // 恢复持续时间，确保动画完整执行
+    },
     onRest: () => {
-      setIsAnimating(false);
-      setCurrentMove(null);
-      if (onAnimationEndCallbackRef.current) onAnimationEndCallbackRef.current();
+      console.log('Animation completed, calling onRest');
+      // 确保在动画完全结束后才调用回调
+      setTimeout(() => {
+        setIsAnimating(false);
+        setCurrentMove(null);
+        if (onAnimationEndCallbackRef.current) {
+          const callback = onAnimationEndCallbackRef.current;
+          onAnimationEndCallbackRef.current = null;
+          callback();
+        }
+      }, 50); // 短暂延迟，确保视觉上的完成
     },
   }));
 
   const triggerLayerRotate = (move: string, onEnd?: () => void) => {
-    if (isAnimating) return;
+    if (isAnimating) {
+      console.warn(`Animation already in progress, ignoring move: ${move}`);
+      if (onEnd) setTimeout(onEnd, 100); // 如果已经在动画中，延迟调用回调
+      return;
+    }
+    
     setIsAnimating(true);
     setCurrentMove(move);
     onAnimationEndCallbackRef.current = onEnd || null;
@@ -211,18 +240,33 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
     const animationDetails = cubeAdapter.getAnimationDetails(move);
     if (!animationDetails) {
       console.warn(`No animation details found for move: ${move}`);
+      setIsAnimating(false);
       if (onEnd) onEnd(); // 即使没有动画也调用onEnd
       return;
     }
     
-    console.log(`Animation details:`, animationDetails);
+    console.log(`Animation details for ${move}:`, animationDetails);
 
+    // 创建旋转向量
     const rotation: [number, number, number] = [0, 0, 0];
     if (animationDetails.axis === 'x') rotation[0] = animationDetails.angle;
     if (animationDetails.axis === 'y') rotation[1] = animationDetails.angle;
     if (animationDetails.axis === 'z') rotation[2] = animationDetails.angle;
 
-    api.start({ from: { rotation: [0, 0, 0] }, to: { rotation }, reset: true });
+    console.log(`Setting rotation for ${move} to:`, rotation);
+    
+    // 确保动画从初始状态开始
+    api.set({ rotation: [0, 0, 0] });
+    
+    // 使用setTimeout确保状态更新后再开始动画
+    setTimeout(() => {
+      api.start({ 
+        to: { rotation }, 
+        reset: true,
+        from: { rotation: [0, 0, 0] },
+        immediate: false,
+      });
+    }, 10);
   };
 
   useImperativeHandle(ref, () => ({ triggerLayerRotate }));
@@ -234,15 +278,23 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
     const details = cubeAdapter.getAnimationDetails(move);
     if (!details) return { filter: () => false, animatedCubies: [], staticCubies: cubieList };
     
-    const filter = (pos: THREE.Vector3) => {
-      const index = getCubeletIndex(pos.x, pos.y, pos.z);
-      return details.cubeletIndices.includes(index);
+    console.log(`Animation details for ${move}:`, details);
+    console.log(`Cubelet indices to animate:`, details.cubeletIndices);
+    
+    const filter = (pos: [number, number, number]) => {
+      const index = getCubeletIndex(pos[0], pos[1], pos[2]);
+      const shouldAnimate = details.cubeletIndices.includes(index);
+      console.log(`Checking cubelet at position [${pos}], index: ${index}, should animate: ${shouldAnimate}`);
+      return shouldAnimate;
     };
     
-    const animatedCubies = cubieList.filter(c => filter(new THREE.Vector3(...c.position)));
-    const staticCubies = cubieList.filter(c => !filter(new THREE.Vector3(...c.position)));
+    const animatedCubies = cubieList.filter(c => filter(c.position));
+    const staticCubies = cubieList.filter(c => !filter(c.position));
     
     console.log(`Move: ${move}, Animated cubies: ${animatedCubies.length}, Static cubies: ${staticCubies.length}`);
+    if (animatedCubies.length > 0) {
+      console.log('First animated cubie position:', animatedCubies[0].position);
+    }
     return { filter, animatedCubies, staticCubies };
   };
   
@@ -251,23 +303,42 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
   return (
     <div style={{ width: '100%', height: '100%', touchAction: 'none' }}>
       <Canvas camera={{ position: [3.5, 3.5, 3.5], fov: 50 }}>
-        {/* Removed ambientLight and pointLight as we are using MeshBasicMaterial */}
+        {/* 添加环境光和点光源，提高视觉效果 */}
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} intensity={0.8} />
 
+        {/* 动画组 - 使用animated.group包装需要动画的方块 */}
         <animated.group
-          rotation-x={springs.rotation.to((r) => (Array.isArray(r) ? r[0] : 0))}
-          rotation-y={springs.rotation.to((r) => (Array.isArray(r) ? r[1] : 0))}
-          rotation-z={springs.rotation.to((r) => (Array.isArray(r) ? r[2] : 0))}
+          rotation={springs.rotation}
         >
           {animatedCubies.map((cubie) => (
-            <Cubie key={cubie.id} position={cubie.position} materials={cubie.materials} />
+            <Cubie 
+              key={`animated-${cubie.id}`} 
+              position={cubie.position} 
+              materials={cubie.materials} 
+            />
           ))}
         </animated.group>
 
-        {staticCubies.map((cubie) => (
-          <Cubie key={cubie.id} position={cubie.position} materials={cubie.materials} />
-        ))}
+        {/* 静态组 - 不需要动画的方块 */}
+        <group>
+          {staticCubies.map((cubie) => (
+            <Cubie 
+              key={`static-${cubie.id}`} 
+              position={cubie.position} 
+              materials={cubie.materials} 
+            />
+          ))}
+        </group>
 
-        <OrbitControls enablePan={false} minDistance={3} maxDistance={10} />
+        {/* 控制器 */}
+        <OrbitControls 
+          enablePan={false} 
+          minDistance={3} 
+          maxDistance={10} 
+          enableDamping={true}
+          dampingFactor={0.1}
+        />
       </Canvas>
     </div>
   );
