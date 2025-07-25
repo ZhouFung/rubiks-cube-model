@@ -122,5 +122,105 @@ export class CubeAdapter {
             B: state.slice(45, 54).split(''),
         };
     }
+
+    /**
+     * Returns animation details (axis, angle, affected cubelet indices) for a given move.
+     * This method does NOT modify the cube's state.
+     */
+    getAnimationDetails(move: string): AnimationDetails | undefined {
+        return moveAnimationMap[move];
+    }
 }
-''
+
+// Helper to get cubelet index from (x, y, z) coordinates
+// Assuming cubelets are indexed from 0 to 26 based on their (x, y, z) positions
+// where x, y, z are -1, 0, 1.
+// Indexing: x + y*3 + z*9 (if x,y,z are mapped to 0,1,2)
+function getCubeletIndex(x: number, y: number, z: number): number {
+    // Map -1, 0, 1 to 0, 1, 2 for array indexing
+    const mapCoord = (coord: number) => coord + 1;
+    return mapCoord(x) + mapCoord(y) * 3 + mapCoord(z) * 9;
+}
+
+// Helper to get cubelet indices for a given face/slice
+function getCubeletIndicesForFace(axis: 'x' | 'y' | 'z', value: -1 | 0 | 1): number[] {
+    const indices: number[] = [];
+    for (let z = -1; z <= 1; z++) {
+        for (let y = -1; y <= 1; y++) {
+            for (let x = -1; x <= 1; x++) {
+                if ((axis === 'x' && x === value) ||
+                    (axis === 'y' && y === value) ||
+                    (axis === 'z' && z === value)) {
+                    indices.push(getCubeletIndex(x, y, z));
+                }
+            }
+        }
+    }
+    return indices;
+}
+
+// Define the animation details for each move
+interface AnimationDetails {
+    axis: 'x' | 'y' | 'z';
+    angle: number; // in radians
+    cubeletIndices: number[];
+}
+
+// Angle for a single turn (90 degrees)
+const QUARTER_TURN = Math.PI / 2;
+
+// Mapping of moves to animation details
+const moveAnimationMap: { [key: string]: AnimationDetails } = {
+    'R': { axis: 'x', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', 1) },
+    "R'": { axis: 'x', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', 1) },
+    'R2': { axis: 'x', angle: -QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('x', 1) },
+
+    'L': { axis: 'x', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', -1) },
+    "L'": { axis: 'x', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', -1) },
+    'L2': { axis: 'x', angle: QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('x', -1) },
+
+    'U': { axis: 'y', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('y', 1) },
+    "U'": { axis: 'y', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('y', 1) },
+    'U2': { axis: 'y', angle: -QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('y', 1) },
+
+    'D': { axis: 'y', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('y', -1) },
+    "D'": { axis: 'y', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('y', -1) },
+    'D2': { axis: 'y', angle: QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('y', -1) },
+
+    'F': { axis: 'z', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('z', 1) },
+    "F'": { axis: 'z', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('z', 1) },
+    'F2': { axis: 'z', angle: -QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('z', 1) },
+
+    'B': { axis: 'z', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('z', -1) },
+    "B'": { axis: 'z', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('z', -1) },
+    'B2': { axis: 'z', angle: QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('z', -1) },
+
+    // Middle slice moves (M, S, E) - these are relative to the standard axes
+    // M: L' x (rotate middle slice around X axis, same direction as L)
+    'M': { axis: 'x', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', 0) },
+    "M'": { axis: 'x', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', 0) },
+    'M2': { axis: 'x', angle: QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('x', 0) },
+
+    // S: F B' (rotate middle slice around Z axis, same direction as F)
+    'S': { axis: 'z', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('z', 0) },
+    "S'": { axis: 'z', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('z', 0) },
+    'S2': { axis: 'z', angle: -QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('z', 0) },
+
+    // E: U D' (rotate middle slice around Y axis, same direction as D)
+    'E': { axis: 'y', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('y', 0) },
+    "E'": { axis: 'y', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('y', 0) },
+    'E2': { axis: 'y', angle: QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('y', 0) },
+
+    // Whole cube rotations
+    'x': { axis: 'x', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', -1).concat(getCubeletIndicesForFace('x', 0), getCubeletIndicesForFace('x', 1)) }, // All cubelets
+    "x'": { axis: 'x', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('x', -1).concat(getCubeletIndicesForFace('x', 0), getCubeletIndicesForFace('x', 1)) },
+    'x2': { axis: 'x', angle: -QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('x', -1).concat(getCubeletIndicesForFace('x', 0), getCubeletIndicesForFace('x', 1)) },
+
+    'y': { axis: 'y', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('y', -1).concat(getCubeletIndicesForFace('y', 0), getCubeletIndicesForFace('y', 1)) }, // All cubelets
+    "y'": { axis: 'y', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('y', -1).concat(getCubeletIndicesForFace('y', 0), getCubeletIndicesForFace('y', 1)) },
+    'y2': { axis: 'y', angle: -QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('y', -1).concat(getCubeletIndicesForFace('y', 0), getCubeletIndicesForFace('y', 1)) },
+
+    'z': { axis: 'z', angle: -QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('z', -1).concat(getCubeletIndicesForFace('z', 0), getCubeletIndicesForFace('z', 1)) }, // All cubelets
+    "z'": { axis: 'z', angle: QUARTER_TURN, cubeletIndices: getCubeletIndicesForFace('z', -1).concat(getCubeletIndicesForFace('z', 0), getCubeletIndicesForFace('z', 1)) },
+    'z2': { axis: 'z', angle: -QUARTER_TURN * 2, cubeletIndices: getCubeletIndicesForFace('z', -1).concat(getCubeletIndicesForFace('z', 0), getCubeletIndicesForFace('z', 1)) },
+};

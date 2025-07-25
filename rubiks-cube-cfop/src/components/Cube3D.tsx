@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import React, { useMemo, forwardRef, useImperativeHandle, useState, useRef } from 'react';
+import React, { useMemo, forwardRef, useImperativeHandle, useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { useSpring, animated } from '@react-spring/three';
-import type { FaceColor } from '../cube/cube-adapter';
+import { CubeAdapter, type FaceColor } from '../cube/cube-adapter';
 
 // Official WCA color scheme: White on top, Green in front.
 const COLOR_MAP: Record<string, string> = {
@@ -26,35 +26,22 @@ const FACE_TO_MATERIAL_INDEX: Record<string, number> = {
   B: 5,
 };
 
-// Defines the 26 cubies with their initial positions.
-const CUBIE_POSITIONS = [
-  [-1, 1, 1],
-  [0, 1, 1],
-  [1, 1, 1],
-  [-1, 1, 0],
-  [0, 1, 0],
-  [1, 1, 0],
-  [-1, 1, -1],
-  [0, 1, -1],
-  [1, 1, -1],
-  [-1, 0, 1],
-  [1, 0, 1],
-  [-1, 0, 0],
-  [0, 0, 1], // Added missing center cubie
-  [0, 0, -1], // Added missing center cubie
-  [1, 0, 0],
-  [-1, 0, -1],
-  [1, 0, -1],
-  [-1, -1, 1],
-  [0, -1, 1],
-  [1, -1, 1],
-  [-1, -1, 0],
-  [0, -1, 0],
-  [1, -1, 0],
-  [-1, -1, -1],
-  [0, -1, -1],
-  [1, -1, -1],
-];
+// Helper to get cubelet index from (x, y, z) coordinates
+// This must be consistent with the one in cube-adapter.ts
+function getCubeletIndex(x: number, y: number, z: number): number {
+  const mapCoord = (coord: number) => coord + 1; // Map -1, 0, 1 to 0, 1, 2
+  return mapCoord(x) + mapCoord(y) * 3 + mapCoord(z) * 9;
+}
+
+// Programmatically generate CUBIE_POSITIONS to match getCubeletIndex order
+const CUBIE_POSITIONS: [number, number, number][] = [];
+for (let z = -1; z <= 1; z++) {
+  for (let y = -1; y <= 1; y++) {
+    for (let x = -1; x <= 1; x++) {
+      CUBIE_POSITIONS[getCubeletIndex(x, y, z)] = [x, y, z];
+    }
+  }
+}
 
 // This is the ground truth mapping from the 54-sticker cubejs string to the 3D model.
 const STICKER_MAP = [
@@ -117,7 +104,7 @@ const STICKER_MAP = [
   { p: [-1, 0, -1], f: 'B' },
   { p: [1, -1, -1], f: 'B' },
   { p: [0, -1, -1], f: 'B' },
-  { p: [-1, -1, -1], f: 'B' },
+  { p: [1, -1, -1], f: 'B' },
 ];
 
 const Cubie = React.memo(
@@ -134,56 +121,11 @@ const Cubie = React.memo(
   ),
 );
 
-function parseMove(move: string) {
-  const base = move[0];
-  const prime = move.includes("'");
-  const double = move.includes('2');
-  let axis: 'x' | 'y' | 'z';
-  let value = Math.PI / 2;
-  let filter: (p: THREE.Vector3) => boolean;
-
-  switch (base) {
-    case 'U':
-      axis = 'y';
-      filter = (p) => p.y > 0.5;
-      value = -value;
-      break;
-    case 'D':
-      axis = 'y';
-      filter = (p) => p.y < -0.5;
-      break;
-    case 'F':
-      axis = 'z';
-      filter = (p) => p.z > 0.5;
-      value = -value;
-      break;
-    case 'B':
-      axis = 'z';
-      filter = (p) => p.z < -0.5;
-      break;
-    case 'L':
-      axis = 'x';
-      filter = (p) => p.x < -0.5;
-      break;
-    case 'R':
-      axis = 'x';
-      filter = (p) => p.x > 0.5;
-      value = -value;
-      break;
-    default:
-      axis = 'y';
-      filter = () => false;
-      break;
-  }
-
-  if (prime) value = -value;
-  if (double) value *= 2;
-  return { axis, value, filter };
-}
-
 interface Cube3DProps {
   faceColors: Record<FaceColor, string[]>;
 }
+
+const cubeAdapter = new CubeAdapter(); // 实例化CubeAdapter
 
 const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
   const [isAnimating, setIsAnimating] = useState(false);
@@ -260,20 +202,43 @@ const Cube3D = forwardRef(function Cube3D({ faceColors }: Cube3DProps, ref) {
     setCurrentMove(move);
     onAnimationEndCallbackRef.current = onEnd || null;
 
-    const { axis, value } = parseMove(move);
+    // 使用CubeAdapter中的getAnimationDetails替代parseMove
+    const animationDetails = cubeAdapter.getAnimationDetails(move);
+    if (!animationDetails) {
+      console.warn(`No animation details found for move: ${move}`);
+      if (onEnd) onEnd(); // 即使没有动画也调用onEnd
+      return;
+    }
+
     const rotation: [number, number, number] = [0, 0, 0];
-    if (axis === 'x') rotation[0] = value;
-    if (axis === 'y') rotation[1] = value;
-    if (axis === 'z') rotation[2] = value;
+    if (animationDetails.axis === 'x') rotation[0] = animationDetails.angle;
+    if (animationDetails.axis === 'y') rotation[1] = animationDetails.angle;
+    if (animationDetails.axis === 'z') rotation[2] = animationDetails.angle;
 
     api.start({ from: { rotation: [0, 0, 0] }, to: { rotation }, reset: true });
   };
 
   useImperativeHandle(ref, () => ({ triggerLayerRotate }));
 
-  const { filter } = currentMove ? parseMove(currentMove) : { filter: () => false };
-  const animatedCubies = cubieList.filter((c) => filter(new THREE.Vector3(...c.position)));
-  const staticCubies = cubieList.filter((c) => !filter(new THREE.Vector3(...c.position)));
+  // 创建一个函数来确定哪些方块应该被动画
+  const getCubesToAnimate = (move: string | null) => {
+    if (!move) return { filter: () => false, animatedCubies: [], staticCubies: cubieList };
+    
+    const details = cubeAdapter.getAnimationDetails(move);
+    if (!details) return { filter: () => false, animatedCubies: [], staticCubies: cubieList };
+    
+    const filter = (pos: THREE.Vector3) => {
+      const index = getCubeletIndex(pos.x, pos.y, pos.z);
+      return details.cubeletIndices.includes(index);
+    };
+    
+    const animatedCubies = cubieList.filter(c => filter(new THREE.Vector3(...c.position)));
+    const staticCubies = cubieList.filter(c => !filter(new THREE.Vector3(...c.position)));
+    
+    return { filter, animatedCubies, staticCubies };
+  };
+  
+  const { filter, animatedCubies, staticCubies } = getCubesToAnimate(currentMove);
 
   return (
     <div style={{ width: '100%', height: '100%', touchAction: 'none' }}>
