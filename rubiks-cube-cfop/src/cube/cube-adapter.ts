@@ -63,14 +63,13 @@ export class CubeAdapter {
                 console.error('cube.solve 方法不存在，cube:', this.cube);
                 return null;
             }
+            console.log('Upright result:', this.cube.upright());
+            console.log('Cube state before solve:', this.cube.asString());
             const result = this.cube.solve();
-            if (typeof result === 'string' && result.length > 0) {
+            if (typeof result === 'string') {
                 return result.split(' ');
             }
-            if (typeof result === 'string' && result.length === 0) {
-                console.warn('魔方已复原或无解步骤');
-            }
-            return []; // 已复原或无解
+            return null; // Should not happen if solve returns a string
         } catch (e) {
             console.error('解魔方出错:', e, '当前状态:', this.getState());
             return null; // 表示发生错误
